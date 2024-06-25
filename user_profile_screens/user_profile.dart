@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:per_rat/components/constants.dart';
-import 'package:per_rat/screens/user_profile/edit_user_profile.dart';
+import 'package:per_rat/user_profile_screens/edit_user_profile.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

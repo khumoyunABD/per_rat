@@ -8,7 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:per_rat/data/user_gender.dart';
 import 'package:per_rat/models/anime.dart';
 import 'package:per_rat/models/user_gender.dart';
-import 'package:per_rat/screens/user_profile/user_image_picker.dart';
+
+import 'user_image_picker.dart';
 
 class EditUserProfileScreen extends StatefulWidget {
   const EditUserProfileScreen({super.key});

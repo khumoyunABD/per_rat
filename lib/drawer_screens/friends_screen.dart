@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:per_rat/screens/friend_item.dart';
+import 'package:per_rat/widgets/friend_item.dart';
 
 class FriendsScreen extends StatelessWidget {
   const FriendsScreen({super.key});
