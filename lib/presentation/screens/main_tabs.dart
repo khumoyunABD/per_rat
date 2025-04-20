@@ -1,9 +1,11 @@
+import 'dart:developer';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/repositories/firestore_data.dart';
+import 'package:per_rat/data/models/models.dart';
+import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/drawer_screens/new_drawer.dart';
 import 'package:per_rat/presentation/drawer_screens/notifications_screen.dart';
-import 'package:per_rat/data/models/anime.dart';
 import 'package:per_rat/presentation/screens/discover.dart';
 import 'package:per_rat/presentation/screens/home.dart';
 import 'package:per_rat/presentation/screens/my_list.dart';
@@ -25,6 +27,7 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
   int _selectedPageIndex = 0;
   List<Anime> _registeredAnime = [];
   //final user = FirebaseAuth.instance.currentUser!;
+  final animeRepo = AnimeRepository();
 
   @override
   void initState() {
@@ -33,10 +36,20 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
   }
 
   void _fetchAnime() async {
-    List<Anime> loadedAnime = await loadAnimeFromFirestore();
-    setState(() {
-      _registeredAnime = loadedAnime;
-    });
+    try {
+      AnimeResponse response = await animeRepo.fetchAnimeList();
+
+      setState(() {
+        _registeredAnime = response.data;
+        // You can also store pagination info if needed
+        // _currentPage = response.pagination.currentPage;
+        // _hasNextPage = response.pagination.hasNextPage;
+      });
+    } catch (e) {
+      setState(() {
+        log(e.toString());
+      });
+    }
   }
 
   void _selectPage(int index) {
@@ -52,22 +65,40 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ongoingAnime = _registeredAnime
-        .where((anime) =>
-            anime.startDate.isAtSameMomentAs(DateTime.now()) ||
-            anime.startDate.isBefore(DateTime.now()) && anime.endDate.year == 0)
-        .toList();
+    // Safely filter ongoing anime
+    final ongoingAnime = _registeredAnime.where((anime) {
+      // Check if aired and its properties are not null
+      final now = DateTime.now();
+      final fromDate = anime.aired.from;
+      final toDate = anime.aired.to;
 
-    final trendingAnime1 = _registeredAnime
-        .where((anime1) => int.parse(anime1.popularity) < 1000)
-        .toList();
+      // If the start date is null, it can't be ongoing
+      if (fromDate == null) return false;
 
-    final upcomingAnime = _registeredAnime
-        .where((anime) =>
-            anime.startDate.isAfter(DateTime.now()) &&
-                anime.endDate.year == 0 ||
-            anime.startDate.year == 0)
-        .toList();
+      // Check if anime is currently airing (started but not ended, or has no end date)
+      return fromDate.isBefore(now) ||
+          fromDate.isAtSameMomentAs(now) &&
+              (toDate == null || toDate.year == 0);
+    }).toList();
+
+    // Safely filter trending anime
+    final trendingAnime1 = _registeredAnime.where((anime) {
+      return anime.popularity! < 1000;
+    }).toList();
+
+    // Safely filter upcoming anime
+    final upcomingAnime = _registeredAnime.where((anime) {
+      // Check if aired and its properties are not null
+      final now = DateTime.now();
+      final fromDate = anime.aired.from;
+      final toDate = anime.aired.to;
+
+      // If the start date is null, it can't be ongoing
+      if (fromDate == null) return false;
+
+      // Check if anime is upcoming (hasn't started yet)
+      return fromDate.isAfter(now) && (toDate == null || toDate.year == 0);
+    }).toList();
 
     final user = FirebaseAuth.instance.currentUser!;
 
@@ -114,7 +145,7 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
         unselectedItemColor: Colors.white,
         type: BottomNavigationBarType.fixed,
         fixedColor: Colors.amber,
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Colors.deepPurple.shade200,
 
         //Theme.of(context).colorScheme.surface,
         onTap: _selectPage,

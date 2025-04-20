@@ -1,10 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:per_rat/data/models/anime.dart';
-import 'package:per_rat/data/models/show_rating.dart';
-import 'package:transparent_image/transparent_image.dart';
+// First, add this to your pubspec.yaml:
+// dependencies:
+//   cached_network_image: ^3.3.0
 
-class NewHomeAnimeItem extends StatelessWidget {
-  const NewHomeAnimeItem({
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:per_rat/data/models/models.dart';
+
+class HomeAnimeGridItem extends StatelessWidget {
+  const HomeAnimeGridItem({
     super.key,
     required this.showRating,
     required this.anime,
@@ -28,13 +31,45 @@ class NewHomeAnimeItem extends StatelessWidget {
       elevation: 2,
       child: Stack(
         children: [
-          FadeInImage(
-            placeholder: MemoryImage(kTransparentImage),
-            image: NetworkImage(anime.imageUrl),
+          // Use CachedNetworkImage instead of FadeInImage
+          CachedNetworkImage(
+            imageUrl: anime.mainImageUrl,
             fit: BoxFit.cover,
             height: 400,
             width: 200,
+            placeholder: (context, url) => Container(
+              color: Colors.grey[800],
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white54,
+                ),
+              ),
+            ),
+            errorWidget: (context, url, error) => Container(
+              color: Colors.grey[800],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.image_not_supported_rounded,
+                    color: Colors.white70,
+                    size: 50,
+                  ),
+                  SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: Text(
+                      anime.title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
+
+          // Rest of your widget remains the same
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -47,12 +82,12 @@ class NewHomeAnimeItem extends StatelessWidget {
               ),
             ),
           ),
+
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: Container(
-              //color: Colors.black54,
               padding: const EdgeInsets.symmetric(
                 vertical: 8,
                 horizontal: 12,
@@ -79,19 +114,13 @@ class NewHomeAnimeItem extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(
-                    height: 7,
-                  ),
+                  const SizedBox(height: 7),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
-                          Icon(
-                            Icons.star,
-                            color: Colors.white,
-                            size: 16,
-                          ),
+                          Icon(Icons.star, color: Colors.white, size: 16),
                           const SizedBox(width: 4),
                           Text(
                             showRating.score.toString(),
@@ -105,14 +134,11 @@ class NewHomeAnimeItem extends StatelessWidget {
                       ),
                       Row(
                         children: [
-                          Icon(
-                            Icons.numbers_outlined,
-                            color: Colors.white,
-                            size: 16,
-                          ),
+                          Icon(Icons.numbers_outlined,
+                              color: Colors.white, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${showRating.progress} / ${anime.totalEpisodes}',
+                            '${showRating.progress} / ${anime.episodes}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
@@ -125,7 +151,7 @@ class NewHomeAnimeItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    anime.genre.join(', '),
+                    anime.genreNames.join(', '),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -137,6 +163,7 @@ class NewHomeAnimeItem extends StatelessWidget {
               ),
             ),
           ),
+
           if (isSelected)
             Positioned.fill(
               child: Container(

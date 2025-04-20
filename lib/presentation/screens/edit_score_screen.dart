@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/presentation/components/constants.dart';
-import 'package:per_rat/data/models/anime.dart';
 
 class EditScoreScreen extends StatefulWidget {
   const EditScoreScreen({
@@ -121,7 +121,7 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
       if (statusNumber == 1) {
         cCompleted = Colors.blue;
         _selectedStatus = 'Completed';
-        _selectedProgress = widget.anime.totalEpisodes.toString();
+        _selectedProgress = widget.anime.episodes.toString();
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: Duration(seconds: 1),
@@ -204,11 +204,13 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
                       ),
                     ),
                     Text(
-                      widget.anime.status,
+                      widget.anime.status ?? 'unknown',
                       style: TextStyle(
-                        color: (widget.anime.status.contains('Upcoming')
+                        color: (widget.anime.status != null &&
+                                widget.anime.status!.contains('Upcoming')
                             ? Colors.blue
-                            : widget.anime.status.contains('Ongoing')
+                            : widget.anime.status != null &&
+                                    widget.anime.status!.contains('Ongoing')
                                 ? Colors.green
                                 : Colors.purple),
                         fontSize: 16,
@@ -344,9 +346,9 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
                   child: ListView.builder(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
-                      itemCount: (widget.anime.totalEpisodes > 0)
-                          ? widget.anime.totalEpisodes + 1
-                          : widget.anime.totalEpisodes + 2,
+                      itemCount: (widget.anime.episodes! > 0)
+                          ? widget.anime.episodes! + 1
+                          : widget.anime.episodes! + 2,
                       itemBuilder: (context, index) {
                         int number = index;
 

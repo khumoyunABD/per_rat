@@ -3,14 +3,13 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/repositories/firestore_data.dart';
+import 'package:per_rat/data/models/models.dart';
+import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/data/repositories/firestore_service.dart';
 import 'package:per_rat/data/repositories/messaging_service.dart';
-import 'package:per_rat/data/models/anime.dart';
-import 'package:per_rat/data/models/show_rating.dart';
 import 'package:per_rat/presentation/screens/show_rating_details_screen.dart';
 import 'package:per_rat/presentation/widgets/home_anime_skeleton.dart';
-import 'package:per_rat/presentation/widgets/new_home_anime_item.dart';
+import 'package:per_rat/presentation/widgets/home_grid_anime_item.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -42,13 +41,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isSelectionMode = false;
   List<ShowRating> _selectedRatings = [];
 
+  final animeRepo = AnimeRepository();
+
   void _fetchAnime() async {
     try {
-      List<Anime> loadedAnime = await loadAnimeFromFirestore();
+      AnimeResponse response = await animeRepo.fetchAnimeList();
+
       setState(() {
-        _registeredAnime = loadedAnime;
-        //_isLoading = false;
+        _registeredAnime = response.data;
+        // You can also store pagination info if needed
+        // _currentPage = response.pagination.currentPage;
+        // _hasNextPage = response.pagination.hasNextPage;
       });
+
       _checkLoadingState();
     } catch (e) {
       setState(() {
@@ -240,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         selectRating(context, rating);
                       }
                     },
-                    child: NewHomeAnimeItem(
+                    child: HomeAnimeGridItem(
                       showRating: rating,
                       anime: animeSet!,
                       isSelected: _selectedRatings.contains(rating),
@@ -249,17 +254,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       },
                     ),
                   );
-
-                  // return HomeAnimeItem(
-                  //   showRating: rating,
-                  //   anime: animeSet!,
-                  //   onSelectRating: (rating) {
-                  //     selectRating(context, rating);
-                  //   },
-                  //   onDeleteRating: (rating) {
-                  //     deleteRating(rating);
-                  //   },
-                  // );
                 },
               );
 

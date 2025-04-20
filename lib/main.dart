@@ -5,6 +5,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:per_rat/firebase_options.dart';
 import 'package:per_rat/presentation/screens/auth_page.dart';
 
+// Create this class to bypass SSL certificate validation
+// class MyHttpOverrides extends HttpOverrides {
+//   @override
+//   HttpClient createHttpClient(SecurityContext? context) {
+//     return super.createHttpClient(context)
+//       ..badCertificateCallback =
+//           (X509Certificate cert, String host, int port) => true;
+//   }
+// }
+
 // new color update
 final colorScheme = ColorScheme.fromSeed(
   brightness: Brightness.dark,
@@ -40,6 +50,8 @@ final _router = GoRouter(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  //HttpOverrides.global = MyHttpOverrides();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

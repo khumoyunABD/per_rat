@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/models/anime.dart';
+import 'package:per_rat/data/models/models.dart';
 
 class ArchiveAnimeItem extends StatelessWidget {
   const ArchiveAnimeItem({

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/repositories/firestore_data.dart';
-import 'package:per_rat/data/models/anime.dart';
-import 'package:per_rat/data/models/show_rating.dart';
+import 'package:per_rat/data/models/models.dart';
+import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/screens/edit_ratings.dart';
 import 'package:per_rat/presentation/widgets/showDetailsSkeleton.dart';
@@ -24,19 +23,36 @@ class _ShowRatingDetailsState extends State<ShowRatingDetails> {
   Anime? animeSet;
   bool _isLoading = true; // Add a loading state
 
+  final animeRepo = AnimeRepository();
+
   @override
   void initState() {
     super.initState();
     _fetchAnime();
   }
 
+  // void _fetchAnime() async {
+  //   List<Anime> loadedAnime = await animeRepo.fetchAllAnime();
+  //   setState(() {
+  //     _registeredAnime = loadedAnime;
+  //     animeSet = getAnimeFromShowRating(widget.showRating);
+  //     _isLoading = false; // Update loading state
+  //   });
+  // }
+
   void _fetchAnime() async {
-    List<Anime> loadedAnime = await loadAnimeFromFirestore();
-    setState(() {
-      _registeredAnime = loadedAnime;
-      animeSet = getAnimeFromShowRating(widget.showRating);
-      _isLoading = false; // Update loading state
-    });
+    try {
+      AnimeResponse response = await animeRepo.fetchAnimeList();
+      setState(() {
+        _registeredAnime =
+            response.data; // Extract the list of Anime from the response
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Anime? getAnimeFromShowRating(ShowRating showRating) {
@@ -62,8 +78,9 @@ class _ShowRatingDetailsState extends State<ShowRatingDetails> {
   Widget build(BuildContext context) {
     final List<Anime> similarAnime = _registeredAnime.where((anime) {
       // Find common genres between the two anime
-      int commonGenres =
-          anime.genre.where((g) => animeSet!.genre.contains(g)).length;
+      int commonGenres = anime.genreNames
+          .where((g) => animeSet!.genreNames.contains(g))
+          .length;
 
       // Only include anime with at least 2 similar genres and different title
       return commonGenres >= 2 && anime.title != animeSet!.title;
@@ -113,7 +130,7 @@ class _ShowRatingDetailsState extends State<ShowRatingDetails> {
                 children: [
                   Center(
                     child: Image.network(
-                      animeSet!.imageUrl,
+                      animeSet!.mainImageUrl,
                       height: 300,
                     ),
                   ),
@@ -134,21 +151,19 @@ class _ShowRatingDetailsState extends State<ShowRatingDetails> {
                     children: [
                       _buildInfoColumn(
                         'Score',
-                        (double.tryParse(animeSet!.score) == 0)
+                        animeSet!.score == 0
                             ? 'N/A'
-                            : animeSet!.score,
+                            : animeSet!.score.toString(),
                         Icons.star_border,
                       ),
                       _buildInfoColumn(
                         'Rank',
-                        (int.tryParse(animeSet!.rank) == 0)
-                            ? 'N/A'
-                            : animeSet!.rank,
+                        animeSet!.rank == 0 ? 'N/A' : animeSet!.rank.toString(),
                         Icons.leaderboard,
                       ),
                       _buildInfoColumn(
                         'Popularity',
-                        animeSet!.popularity,
+                        animeSet!.popularity.toString(),
                         Icons.people,
                       ),
                       _buildInfoColumn(
@@ -160,12 +175,12 @@ class _ShowRatingDetailsState extends State<ShowRatingDetails> {
                   ),
                   SizedBox(height: 16),
                   _buildStatusRow('Premiered',
-                      '${formatterMY.format(animeSet!.startDate)}'),
-                  _buildStatusRow('Status', animeSet!.status),
+                      '${animeSet!.aired.from != null ? formatterMY.format(animeSet!.aired.from!) : "Unknown"}'),
+                  _buildStatusRow('Status', animeSet!.status ?? 'unknown'),
                   _buildStatusRow(
-                      'Episodes', '${animeSet!.totalEpisodes.toString()}'),
+                      'Episodes', '${animeSet!.episodes.toString()}'),
                   SizedBox(height: 16),
-                  _buildGenreChips(animeSet!.genre),
+                  _buildGenreChips(animeSet!.genreNames),
                   SizedBox(height: 16),
                   Text(
                     'Synopsis',
@@ -177,10 +192,10 @@ class _ShowRatingDetailsState extends State<ShowRatingDetails> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    animeSet!.synopsis
-                        .join()
-                        .replaceAll('[', '"')
-                        .replaceAll(']', '"'),
+                    animeSet!.synopsis ?? 'no synopsis',
+                    // .join()
+                    // .replaceAll('[', '"')
+                    // .replaceAll(']', '"'),
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.white,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/models/anime.dart';
+import 'package:per_rat/data/models/models.dart';
 
 class DatedAnimeItem extends StatelessWidget {
   const DatedAnimeItem({
@@ -21,10 +21,10 @@ class DatedAnimeItem extends StatelessWidget {
         contentPadding: const EdgeInsets.all(15),
         title: Text(anime.title),
         leading: Tab(
-          icon: Image.network(anime.imageUrl),
+          icon: Image.network(anime.mainImageUrl),
           height: 72,
         ),
-        trailing: Text(anime.totalEpisodes.toString()),
+        trailing: Text(anime.episodes.toString()),
         onTap: () {
           onSelectAnime(anime);
         },

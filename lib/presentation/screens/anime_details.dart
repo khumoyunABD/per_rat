@@ -1,11 +1,12 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/repositories/firestore_data.dart';
-import 'package:per_rat/data/models/anime.dart';
+import 'package:per_rat/data/models/models.dart';
+import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/screens/edit_score_screen.dart';
 import 'package:per_rat/presentation/widgets/showDetailsSkeleton.dart';
-import 'package:per_rat/presentation/widgets/similar_anime_item.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class AnimeDetailsScreen extends StatefulWidget {
@@ -22,18 +23,21 @@ class AnimeDetailsScreen extends StatefulWidget {
 
 class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
   late YoutubePlayerController _controller;
-  List<Anime> _registeredAnime = [];
+  //List<Anime> _registeredAnime = [];
   bool _isLoading = true; // Add a loading state
 
   final user = FirebaseAuth.instance.currentUser!;
   bool movieExists = false;
 
+  final animeRepo = AnimeRepository();
+
   @override
   void initState() {
-    final videoID = YoutubePlayer.convertUrlToId(widget.anime.trailerUrl);
+    final videoID =
+        YoutubePlayer.convertUrlToId(widget.anime.trailer.url ?? '');
 
     _controller = YoutubePlayerController(
-      initialVideoId: videoID!,
+      initialVideoId: videoID ?? '',
       flags: const YoutubePlayerFlags(
         autoPlay: false,
         //controlsVisibleAtStart: true,
@@ -45,16 +49,19 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
     super.initState();
 
     checkIfMovieExists();
-    _fetchAnime();
+    // _fetchAnime();
+
+    log(widget.anime.toString());
+    _isLoading = false;
   }
 
-  void _fetchAnime() async {
-    List<Anime> loadedAnime = await loadAnimeFromFirestore();
-    setState(() {
-      _registeredAnime = loadedAnime;
-      _isLoading = false;
-    });
-  }
+  // void _fetchAnime() async {
+  //   List<Anime> loadedAnime = await animeRepo.fetchAllAnime();
+  //   setState(() {
+  //     _registeredAnime = loadedAnime;
+  //     _isLoading = false;
+  //   });
+  // }
 
   Future<void> checkIfMovieExists() async {
     try {
@@ -91,14 +98,14 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Anime> similarAnime = _registeredAnime.where((anime) {
-      // Find common genres between the two anime
-      int commonGenres =
-          anime.genre.where((g) => widget.anime.genre.contains(g)).length;
+    // final List<Anime> similarAnime = _registeredAnime.where((anime) {
+    //   // Find common genres between the two anime
+    //   int commonGenres =
+    //       anime.genre.where((g) => widget.anime.genre.contains(g)).length;
 
-      // Only include anime with at least 2 similar genres and different title
-      return commonGenres >= 2 && anime.title != widget.anime.title;
-    }).toList();
+    //   // Only include anime with at least 2 similar genres and different title
+    //   return commonGenres >= 2 && anime.title != widget.anime.title;
+    // }).toList();
 
     return Scaffold(
       backgroundColor: Colors.grey[900],
@@ -143,12 +150,60 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  //test
                   Center(
                     child: Image.network(
-                      widget.anime.imageUrl,
+                      //'https://cdn.myanimelist.net/images/anime/7/21569.jpg',
+
+                      widget.anime.mainImageUrl,
                       height: 300,
                     ),
                   ),
+                  // Replace the current image widget with this updated version
+                  // Center(
+                  //   child: widget.anime.images?.jpg?.imageUrl != null &&
+                  //           widget.anime.images!.jpg!.imageUrl!.isNotEmpty
+                  //       ? Image.network(
+                  //           widget.anime.images!.jpg!.imageUrl!,
+                  //           height: 300,
+                  //           loadingBuilder: (context, child, loadingProgress) {
+                  //             if (loadingProgress == null) return child;
+                  //             return Center(
+                  //               child: CircularProgressIndicator(
+                  //                 value: loadingProgress.expectedTotalBytes !=
+                  //                         null
+                  //                     ? loadingProgress.cumulativeBytesLoaded /
+                  //                         loadingProgress.expectedTotalBytes!
+                  //                     : null,
+                  //               ),
+                  //             );
+                  //           },
+                  //           errorBuilder: (context, error, stackTrace) {
+                  //             return Container(
+                  //               height: 300,
+                  //               color: Colors.grey[700],
+                  //               child: Center(
+                  //                 child: Icon(
+                  //                   Icons.image_not_supported,
+                  //                   size: 50,
+                  //                   color: Colors.white,
+                  //                 ),
+                  //               ),
+                  //             );
+                  //           },
+                  //         )
+                  //       : Container(
+                  //           height: 300,
+                  //           color: Colors.grey[700],
+                  //           child: Center(
+                  //             child: Icon(
+                  //               Icons.image_not_supported,
+                  //               size: 50,
+                  //               color: Colors.white,
+                  //             ),
+                  //           ),
+                  //         ),
+                  // ),
                   SizedBox(height: 16),
                   Center(
                     child: Text(
@@ -166,21 +221,21 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                     children: [
                       _buildInfoColumn(
                         'Score',
-                        (double.tryParse(widget.anime.score) == 0)
+                        (widget.anime.score == 0)
                             ? 'N/A'
-                            : widget.anime.score,
+                            : widget.anime.score.toString(),
                         Icons.star_border,
                       ),
                       _buildInfoColumn(
                         'Rank',
-                        (int.tryParse(widget.anime.rank) == 0)
+                        (widget.anime.rank == 0)
                             ? 'N/A'
-                            : widget.anime.rank,
+                            : widget.anime.rank.toString(),
                         Icons.leaderboard,
                       ),
                       _buildInfoColumn(
                         'Popularity',
-                        widget.anime.popularity,
+                        widget.anime.popularity.toString(),
                         Icons.people,
                       ),
                       _buildInfoColumn(
@@ -192,12 +247,12 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                   ),
                   SizedBox(height: 16),
                   _buildStatusRow('Premiered',
-                      '${formatterMY.format(widget.anime.startDate)}'),
-                  _buildStatusRow('Status', widget.anime.status),
+                      '${widget.anime.aired.from != null ? formatterMY.format(widget.anime.aired.from!) : "Unknown"}'),
+                  _buildStatusRow('Status', widget.anime.status ?? 'unknown'),
                   _buildStatusRow(
-                      'Episodes', '${widget.anime.totalEpisodes.toString()}'),
+                      'Episodes', '${widget.anime.episodes.toString()}'),
                   SizedBox(height: 16),
-                  _buildGenreChips(widget.anime.genre),
+                  _buildGenreChips(widget.anime.genreNames),
                   SizedBox(height: 16),
                   Text(
                     'Synopsis',
@@ -209,10 +264,10 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    widget.anime.synopsis
-                        .join()
-                        .replaceAll('[', '"')
-                        .replaceAll(']', '"'),
+                    widget.anime.synopsis ?? 'no synopsis',
+                    // .join()
+                    // .replaceAll('[', '"')
+                    // .replaceAll(']', '"'),
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.white,
@@ -243,6 +298,8 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                     ),
                   ),
                   SizedBox(height: 16),
+
+                  ///similar anime section
                   Text(
                     'Similar Anime',
                     style: TextStyle(
@@ -251,36 +308,36 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                       color: Color.fromARGB(255, 97, 70, 152),
                     ),
                   ),
-                  if (similarAnime.isEmpty)
-                    Container(
-                      height: 100,
-                      alignment: Alignment.bottomCenter,
-                      child: const Center(
-                        child: Text(
-                          'No similar anime were found!',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  if (similarAnime.isNotEmpty)
-                    SizedBox(
-                      height: 240,
-                      child: ListView.builder(
-                        itemExtent: 155,
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.only(
-                            left: 5, right: 15, top: 15, bottom: 10),
-                        itemCount: similarAnime.length,
-                        itemBuilder: (context, index) {
-                          return SimilarAnimeItem(
-                            anime: similarAnime[index],
-                            onPickAnime: (anime) {
-                              pickAnime(context, anime);
-                            },
-                          );
-                        },
-                      ),
-                    ),
+                  // if (similarAnime.isEmpty)
+                  //   Container(
+                  //     height: 100,
+                  //     alignment: Alignment.bottomCenter,
+                  //     child: const Center(
+                  //       child: Text(
+                  //         'No similar anime were found!',
+                  //         style: TextStyle(color: Colors.white),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // if (similarAnime.isNotEmpty)
+                  //   SizedBox(
+                  //     height: 240,
+                  //     child: ListView.builder(
+                  //       itemExtent: 155,
+                  //       scrollDirection: Axis.horizontal,
+                  //       padding: const EdgeInsets.only(
+                  //           left: 5, right: 15, top: 15, bottom: 10),
+                  //       itemCount: similarAnime.length,
+                  //       itemBuilder: (context, index) {
+                  //         return SimilarAnimeItem(
+                  //           anime: similarAnime[index],
+                  //           onPickAnime: (anime) {
+                  //             pickAnime(context, anime);
+                  //           },
+                  //         );
+                  //       },
+                  //     ),
+                  //   ),
                   const SizedBox(
                     height: 30,
                   ),

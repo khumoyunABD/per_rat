@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/models/anime.dart';
+import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/screens/realtime_search.dart';
 import 'package:per_rat/presentation/widgets/discover_anime_item.dart';
@@ -103,10 +103,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ),
                 child: Text(
                   'Ongoing',
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.normal,
-                      ),
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
                 ),
               ),
               SizedBox(
@@ -135,10 +134,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ),
                 child: Text(
                   'Trending',
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.normal,
-                      ),
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
                 ),
               ),
               SizedBox(
@@ -167,10 +165,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ),
                 child: Text(
                   'Upcoming',
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.normal,
-                      ),
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
                 ),
               ),
               SizedBox(

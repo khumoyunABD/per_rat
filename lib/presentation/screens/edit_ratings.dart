@@ -1,10 +1,11 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/models/models.dart';
+import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/components/constants.dart';
-import 'package:per_rat/data/repositories/firestore_data.dart';
-import 'package:per_rat/data/models/anime.dart';
-import 'package:per_rat/data/models/show_rating.dart';
 
 class EditRatingsScreen extends StatefulWidget {
   const EditRatingsScreen({
@@ -36,6 +37,8 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
   String? _selectedProgress = '';
   String? _selectedScore = '';
 
+  final animeRepo = AnimeRepository();
+
   @override
   void initState() {
     super.initState();
@@ -50,12 +53,18 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
   }
 
   void _fetchAnime() async {
-    List<Anime> loadedAnime = await loadAnimeFromFirestore();
-    setState(() {
-      _registeredAnime = loadedAnime;
-      animeSet = getAnimeFromShowrating(
-          widget.showRating); // Update animeSet after fetching anime list
-    });
+    try {
+      AnimeResponse response = await animeRepo.fetchAnimeList();
+
+      setState(() {
+        _registeredAnime = response.data;
+        // You can also store pagination info if needed
+        // _currentPage = response.pagination.currentPage;
+        // _hasNextPage = response.pagination.hasNextPage;
+      });
+    } catch (e) {
+      log(e.toString());
+    }
   }
 
   Anime? getAnimeFromShowrating(ShowRating showrating) {
@@ -145,7 +154,7 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
       if (statusNumber == 1) {
         cCompleted = Colors.blue;
         _selectedStatus = 'Completed';
-        _selectedProgress = animeSet?.totalEpisodes.toString();
+        _selectedProgress = animeSet?.episodes.toString();
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: Duration(seconds: 1),
@@ -377,9 +386,9 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
                   child: ListView.builder(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
-                      itemCount: ((animeSet?.totalEpisodes ?? 0) > 0)
-                          ? (animeSet?.totalEpisodes ?? 0) + 1
-                          : (animeSet?.totalEpisodes ?? 0) + 2,
+                      itemCount: ((animeSet?.episodes ?? 0) > 0)
+                          ? (animeSet?.episodes ?? 0) + 1
+                          : (animeSet?.episodes ?? 0) + 2,
                       itemBuilder: (context, index) {
                         int number = index;
 
