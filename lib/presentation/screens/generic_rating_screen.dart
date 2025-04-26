@@ -39,7 +39,7 @@ class _GenericAnimeScreenState extends State<GenericAnimeScreen> {
 
   void _fetchAnime() async {
     try {
-      AnimeResponse response = await animeRepo.fetchAnimeList();
+      AnimeResponse response = await animeRepo.fetchAnime();
 
       setState(() {
         _registeredAnime = response.data;

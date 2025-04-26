@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/extensions/theme_extension.dart';
 import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/drawer_screens/new_drawer.dart';
@@ -37,7 +38,7 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
 
   void _fetchAnime() async {
     try {
-      AnimeResponse response = await animeRepo.fetchAnimeList();
+      AnimeResponse response = await animeRepo.fetchAnime();
 
       setState(() {
         _registeredAnime = response.data;
@@ -145,9 +146,7 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
         unselectedItemColor: Colors.white,
         type: BottomNavigationBarType.fixed,
         fixedColor: Colors.amber,
-        backgroundColor: Colors.deepPurple.shade200,
-
-        //Theme.of(context).colorScheme.surface,
+        backgroundColor: context.colors.surface,
         onTap: _selectPage,
         currentIndex: _selectedPageIndex,
         items: const [

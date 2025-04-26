@@ -6,7 +6,7 @@ import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/screens/dated_anime_screen.dart';
 import 'package:per_rat/presentation/screens/edit_score_screen.dart';
 import 'package:per_rat/presentation/widgets/archive_anime_item.dart';
-import 'package:per_rat/presentation/widgets/seasonal_anime_test.dart';
+import 'package:per_rat/presentation/widgets/seasonal_anime_item.dart';
 
 class SeasonalScreen extends StatefulWidget {
   const SeasonalScreen({
@@ -37,19 +37,26 @@ class _SeasonalScreenState extends State<SeasonalScreen>
 
   void _fetchAnime() async {
     try {
-      AnimeResponse response = await animeRepo.fetchAnimeList();
+      AnimeResponse response = await animeRepo.fetchAnime();
 
-      setState(() {
-        _registeredAnime = response.data;
-        // You can also store pagination info if needed
-        // _currentPage = response.pagination.currentPage;
-        // _hasNextPage = response.pagination.hasNextPage;
-      });
+      // Check if the widget is still mounted before calling setState
+      if (mounted) {
+        setState(() {
+          _registeredAnime = response.data;
+          _isLoading = false;
+          // You can also store pagination info if needed
+          // _currentPage = response.pagination.currentPage;
+          // _hasNextPage = response.pagination.hasNextPage;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load anime: $e';
-        _isLoading = false;
-      });
+      // Check if the widget is still mounted before calling setState
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load anime: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -154,7 +161,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
           mainAxisSpacing: 3,
         ),
         itemCount: lastAnime.length,
-        itemBuilder: (ctx, index) => SeasonalAnimeTest(
+        itemBuilder: (ctx, index) => SeasonalAnimeItem(
           anime: lastAnime[index],
           onSelectAnime: (anime) {
             pickAnime(context, anime);
@@ -196,7 +203,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
           mainAxisSpacing: 5,
         ),
         itemCount: thisSeaAnime.length,
-        itemBuilder: (ctx, index) => SeasonalAnimeTest(
+        itemBuilder: (ctx, index) => SeasonalAnimeItem(
           anime: thisSeaAnime[index],
           onSelectAnime: (anime) {
             pickAnime(context, anime);
@@ -238,7 +245,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
           mainAxisSpacing: 5,
         ),
         itemCount: nextAnime.length,
-        itemBuilder: (ctx, index) => SeasonalAnimeTest(
+        itemBuilder: (ctx, index) => SeasonalAnimeItem(
           anime: nextAnime[index],
           onSelectAnime: (anime) {
             pickAnime(context, anime);

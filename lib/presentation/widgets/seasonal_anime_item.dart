@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/extensions/theme_extension.dart';
 import 'package:per_rat/data/models/models.dart';
 import 'package:transparent_image/transparent_image.dart';
 
-class SeasonalAnimeTest extends StatelessWidget {
-  const SeasonalAnimeTest({
+class SeasonalAnimeItem extends StatelessWidget {
+  const SeasonalAnimeItem({
     super.key,
     required this.anime,
     required this.onSelectAnime,
@@ -88,7 +89,7 @@ class SeasonalAnimeTest extends StatelessWidget {
                       horizontal: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.amber,
+                      color: context.colors.surface,
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(8),
                         bottomRight: Radius.circular(8),

@@ -3,6 +3,7 @@
 
 export 'anime.dart';
 export 'anime_model.dart';
+export 'anime_response_freezed.dart';
 export 'anime_response.dart';
 export 'show_rating.dart';
 export 'single_anime_response.dart';

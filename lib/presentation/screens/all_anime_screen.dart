@@ -35,31 +35,26 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
 
   void _fetchAnime() async {
     try {
-      AnimeResponse response = await animeRepo.fetchAnimeList();
+      AnimeResponse response = await animeRepo.fetchAnime();
 
-      setState(() {
-        _registeredAnime = response.data;
-        // You can also store pagination info if needed
-        // _currentPage = response.pagination.currentPage;
-        // _hasNextPage = response.pagination.hasNextPage;
-      });
+      if (mounted) {
+        setState(() {
+          _registeredAnime = response.data;
+          // You can also store pagination info if needed
+          // _currentPage = response.pagination.currentPage;
+          // _hasNextPage = response.pagination.hasNextPage;
+        });
 
-      _checkLoadingState();
+        _checkLoadingState();
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load anime: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Anime? getAnimeFromShowrating(ShowRating showrating) {
-    for (Anime anime in _registeredAnime) {
-      if (anime.title == showrating.showName) {
-        return anime;
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load anime: $e';
+          _isLoading = false;
+        });
       }
     }
-    return null;
   }
 
   Future<void> displayRating() async {
@@ -75,27 +70,41 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
           .map((doc) => ShowRating.fromFirestore(doc))
           .toList();
 
-      setState(() {
-        _showratings = filteredRatings;
-      });
-      _checkLoadingState();
+      if (mounted) {
+        setState(() {
+          _showratings = filteredRatings;
+        });
+        _checkLoadingState();
+      }
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load ratings: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+// Check if both anime and ratings have been loaded
+  void _checkLoadingState() {
+    if (mounted &&
+        (_registeredAnime.isNotEmpty ||
+            _showratings.isNotEmpty ||
+            _error != null)) {
       setState(() {
-        _error = 'Failed to load ratings: $e';
         _isLoading = false;
       });
     }
   }
 
-  // Check if both anime and ratings have been loaded
-  void _checkLoadingState() {
-    if (_registeredAnime.isNotEmpty ||
-        _showratings.isNotEmpty ||
-        _error != null) {
-      setState(() {
-        _isLoading = false;
-      });
+  Anime? getAnimeFromShowrating(ShowRating showrating) {
+    for (Anime anime in _registeredAnime) {
+      if (anime.title == showrating.showName) {
+        return anime;
+      }
     }
+    return null;
   }
 
   @override

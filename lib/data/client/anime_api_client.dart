@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:per_rat/data/models/anime_response.dart';
-import 'package:per_rat/data/models/single_anime_response.dart';
+import 'package:per_rat/data/models/models.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'anime_api_client.g.dart';

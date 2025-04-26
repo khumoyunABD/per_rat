@@ -4,7 +4,6 @@ import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/screens/edit_ratings.dart';
 import 'package:per_rat/presentation/widgets/showDetailsSkeleton.dart';
-import 'package:per_rat/presentation/widgets/similar_anime_item.dart';
 
 class ShowRatingDetails extends StatefulWidget {
   const ShowRatingDetails({
@@ -42,10 +41,12 @@ class _ShowRatingDetailsState extends State<ShowRatingDetails> {
 
   void _fetchAnime() async {
     try {
-      AnimeResponse response = await animeRepo.fetchAnimeList();
+      AnimeResponse response = await animeRepo.fetchAnime();
       setState(() {
         _registeredAnime =
             response.data; // Extract the list of Anime from the response
+        animeSet = getAnimeFromShowRating(widget.showRating);
+
         _isLoading = false;
       });
     } catch (e) {
@@ -76,15 +77,15 @@ class _ShowRatingDetailsState extends State<ShowRatingDetails> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Anime> similarAnime = _registeredAnime.where((anime) {
-      // Find common genres between the two anime
-      int commonGenres = anime.genreNames
-          .where((g) => animeSet!.genreNames.contains(g))
-          .length;
+    // final List<Anime> similarAnime = _registeredAnime.where((anime) {
+    //   // Find common genres between the two anime
+    //   int commonGenres = anime.genreNames
+    //       .where((g) => animeSet!.genreNames.contains(g))
+    //       .length;
 
-      // Only include anime with at least 2 similar genres and different title
-      return commonGenres >= 2 && anime.title != animeSet!.title;
-    }).toList();
+    //   // Only include anime with at least 2 similar genres and different title
+    //   return commonGenres >= 2 && anime.title != animeSet!.title;
+    // }).toList();
 
     return Scaffold(
       backgroundColor: Colors.grey[900],
@@ -210,36 +211,36 @@ class _ShowRatingDetailsState extends State<ShowRatingDetails> {
                       color: Color.fromARGB(255, 97, 70, 152),
                     ),
                   ),
-                  if (similarAnime.isEmpty)
-                    Container(
-                      height: 100,
-                      alignment: Alignment.bottomCenter,
-                      child: const Center(
-                        child: Text(
-                          'No similar anime were found!',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  if (similarAnime.isNotEmpty)
-                    SizedBox(
-                      height: 240,
-                      child: ListView.builder(
-                        itemExtent: 155,
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.only(
-                            left: 5, right: 15, top: 15, bottom: 10),
-                        itemCount: similarAnime.length,
-                        itemBuilder: (context, index) {
-                          return SimilarAnimeItem(
-                            anime: similarAnime[index],
-                            onPickAnime: (anime) {
-                              pickAnime(context, anime);
-                            },
-                          );
-                        },
-                      ),
-                    ),
+                  // if (similarAnime.isEmpty)
+                  //   Container(
+                  //     height: 100,
+                  //     alignment: Alignment.bottomCenter,
+                  //     child: const Center(
+                  //       child: Text(
+                  //         'No similar anime were found!',
+                  //         style: TextStyle(color: Colors.white),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // if (similarAnime.isNotEmpty)
+                  //   SizedBox(
+                  //     height: 240,
+                  //     child: ListView.builder(
+                  //       itemExtent: 155,
+                  //       scrollDirection: Axis.horizontal,
+                  //       padding: const EdgeInsets.only(
+                  //           left: 5, right: 15, top: 15, bottom: 10),
+                  //       itemCount: similarAnime.length,
+                  //       itemBuilder: (context, index) {
+                  //         return SimilarAnimeItem(
+                  //           anime: similarAnime[index],
+                  //           onPickAnime: (anime) {
+                  //             pickAnime(context, anime);
+                  //           },
+                  //         );
+                  //       },
+                  //     ),
+                  //   ),
 
                   // SizedBox(height: 8),
                   // _buildSimilarAnimeList(similarAnime),

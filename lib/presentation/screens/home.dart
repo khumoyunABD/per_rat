@@ -45,31 +45,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _fetchAnime() async {
     try {
-      AnimeResponse response = await animeRepo.fetchAnimeList();
+      AnimeResponse response = await animeRepo.fetchAnime();
 
-      setState(() {
-        _registeredAnime = response.data;
-        // You can also store pagination info if needed
-        // _currentPage = response.pagination.currentPage;
-        // _hasNextPage = response.pagination.hasNextPage;
-      });
+      if (mounted) {
+        setState(() {
+          _registeredAnime = response.data;
+          // You can also store pagination info if needed
+          // _currentPage = response.pagination.currentPage;
+          // _hasNextPage = response.pagination.hasNextPage;
+        });
 
-      _checkLoadingState();
+        _checkLoadingState();
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load anime: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Anime? getAnimeFromShowrating(ShowRating showrating) {
-    for (Anime anime in _registeredAnime) {
-      if (anime.title == showrating.showName) {
-        return anime;
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load anime: $e';
+          _isLoading = false;
+        });
       }
     }
-    return null;
   }
 
   Future<void> displayRating() async {
@@ -85,14 +80,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .map((doc) => ShowRating.fromFirestore(doc))
           .toList();
 
-      setState(() {
-        _showratings = filteredRatings;
-      });
+      if (mounted) {
+        setState(() {
+          _showratings = filteredRatings;
+        });
+        _checkLoadingState();
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load ratings: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load ratings: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -105,23 +105,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .doc(showRating.showName) // Assuming showName is the document ID
           .delete();
 
-      setState(() {
-        _showratings.remove(showRating);
-      });
+      if (mounted) {
+        setState(() {
+          _showratings.remove(showRating);
+        });
 
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Selected ratings have been deleted'),
-        ),
-      );
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Selected ratings have been deleted'),
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error deleting ${showRating.showName}: $e'),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting ${showRating.showName}: $e'),
+          ),
+        );
+      }
     }
+  }
+
+  Anime? getAnimeFromShowrating(ShowRating showrating) {
+    for (Anime anime in _registeredAnime) {
+      if (anime.title == showrating.showName) {
+        return anime;
+      }
+    }
+    return null;
   }
 
   void _toggleSelectionMode() {
@@ -143,11 +156,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-  // Check if both anime and ratings have been loaded
+// Check if both anime and ratings have been loaded
   void _checkLoadingState() {
-    if (_registeredAnime.isNotEmpty ||
-        _showratings.isNotEmpty ||
-        _error != null) {
+    if (mounted &&
+        (_registeredAnime.isNotEmpty ||
+            _showratings.isNotEmpty ||
+            _error != null)) {
       setState(() {
         _isLoading = false;
       });
@@ -169,9 +183,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       await _firestoreService.uploadUserMetadata();
     } catch (e) {
-      setState(() {
-        _error = 'Failed to upload user metadata: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to upload user metadata: $e';
+        });
+      }
     }
   }
 

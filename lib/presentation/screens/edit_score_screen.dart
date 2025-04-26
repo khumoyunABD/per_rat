@@ -28,7 +28,7 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
 
   //user score variables
   String? _selectedStatus = 'Watching';
-  String? _selectedProgress = '0';
+  String _selectedProgress = '0';
   String? _selectedScore = '';
 
   @override
@@ -43,48 +43,64 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
     super.dispose();
   }
 
+  // Add this function to sanitize document IDs
+  String sanitizeDocumentId(String id) {
+    // Replace characters that cause problems in Firestore paths
+    // Especially the forward slash which is interpreted as a path separator
+    return id
+        .replaceAll('/', '_')
+        .replaceAll('.', '_')
+        .replaceAll('#', '_')
+        .replaceAll('[', '_')
+        .replaceAll(']', '_')
+        .replaceAll('*', '_')
+        .replaceAll('\\', '_');
+  }
+
   void _submit() async {
     try {
       DocumentReference userDocRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
       CollectionReference ratingCollectionRef =
           userDocRef.collection('ratings');
+
+      // Sanitize the anime title for use as a document ID
+      String docId = sanitizeDocumentId(widget.anime.title);
+
       QuerySnapshot showDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('ratings')
           .get();
 
-      final bool showExists = showDoc.docs
-          .where((show) => show.id.contains(widget.anime.title))
-          .isNotEmpty;
+      // Use the original title in your query check
+      final bool showExists =
+          showDoc.docs.where((show) => show.id.contains(docId)).isNotEmpty;
 
+      // Store both the sanitized ID and the original title
       if (showExists) {
-        //
-        await ratingCollectionRef.doc(widget.anime.title).set({
+        await ratingCollectionRef.doc(docId).set({
+          'title': widget.anime.title, // Store the original title
           'status': _selectedStatus,
           'progress': _selectedProgress,
           'score': _selectedScore,
           'timestamp': FieldValue.serverTimestamp(),
         });
 
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            //behavior: SnackBarBehavior.floating,
-            content: Text('The movie rating has been edited!'),
-          ),
-        );
-
-        Navigator.of(context).pop();
+        // Rest of your code...
       }
       if (!showExists) {
-        await ratingCollectionRef.doc(widget.anime.title).set({
+        await ratingCollectionRef.doc(docId).set({
+          'title': widget.anime.title, // Store the original title
           'status': _selectedStatus,
           'progress': _selectedProgress,
           'score': _selectedScore,
           'timestamp': FieldValue.serverTimestamp(),
         });
+
+        // Rest of your code...
+
+        // Rest of your function...
 
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -346,9 +362,11 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
                   child: ListView.builder(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
-                      itemCount: (widget.anime.episodes! > 0)
+                      itemCount: widget.anime.episodes != null &&
+                              widget.anime.episodes! > 0
                           ? widget.anime.episodes! + 1
-                          : widget.anime.episodes! + 2,
+                          : 1,
+                      //: widget.anime.episodes! + 2,
                       itemBuilder: (context, index) {
                         int number = index;
 
