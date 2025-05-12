@@ -10,13 +10,13 @@ class HomeAnimeGridItem extends StatelessWidget {
   const HomeAnimeGridItem({
     super.key,
     required this.showRating,
-    required this.anime,
+    // required this.anime, // Anime object is no longer needed
     required this.isSelected,
     required this.onDeleteRating,
   });
 
   final ShowRating showRating;
-  final Anime anime;
+  // final Anime anime; // Anime object is no longer needed
   final bool isSelected;
   final void Function(ShowRating showRating) onDeleteRating;
 
@@ -33,7 +33,7 @@ class HomeAnimeGridItem extends StatelessWidget {
         children: [
           // Use CachedNetworkImage instead of FadeInImage
           CachedNetworkImage(
-            imageUrl: anime.mainImageUrl,
+            imageUrl: showRating.imageUrl ?? '', // Use imageUrl from showRating
             fit: BoxFit.cover,
             height: 400,
             width: 200,
@@ -59,7 +59,7 @@ class HomeAnimeGridItem extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12.0),
                     child: Text(
-                      anime.title,
+                      showRating.title, // Use title from showRating
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white70),
                     ),
@@ -103,7 +103,7 @@ class HomeAnimeGridItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    anime.title,
+                    showRating.title, // Use title from showRating
                     maxLines: 1,
                     textAlign: TextAlign.center,
                     softWrap: true,
@@ -138,7 +138,7 @@ class HomeAnimeGridItem extends StatelessWidget {
                               color: Colors.white, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${showRating.progress} / ${anime.episodes}',
+                            '${showRating.completedEpisodes ?? 0} / ${showRating.totalEpisodes ?? '?'}', // Use totalEpisodes from showRating
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
@@ -151,7 +151,7 @@ class HomeAnimeGridItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    anime.genreNames.join(', '),
+                    showRating.genres?.join(', ') ?? 'N/A', // Use genres from showRating
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,

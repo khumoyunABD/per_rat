@@ -30,7 +30,7 @@ class DiscoverAnimeItem extends StatelessWidget {
             FadeInImage(
               alignment: Alignment.center,
               placeholder: MemoryImage(kTransparentImage),
-              image: NetworkImage(anime.mainImageUrl),
+              image: NetworkImage(anime.images['jpg']!.imageUrl!),
               fit: BoxFit.cover,
               height: 200,
               width: 150,

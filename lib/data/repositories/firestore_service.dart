@@ -5,22 +5,22 @@ class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<void> setUserOnlineStatus(bool isOnline) async {
-    final user = _auth.currentUser;
+  // Future<void> setUserOnlineStatus(bool isOnline) async {
+  //   final user = _auth.currentUser;
 
-    if (user == null) return;
+  //   if (user == null) return;
 
-    final userDoc = _firestore.collection('users').doc(user.uid);
+  //   final userDoc = _firestore.collection('users').doc(user.uid);
 
-    if (isOnline) {
-      await userDoc.set({'status': 'online'}, SetOptions(merge: true));
-    } else {
-      await userDoc.set({
-        'status': 'offline',
-        'last_online': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-  }
+  //   if (isOnline) {
+  //     await userDoc.set({'status': 'online'}, SetOptions(merge: true));
+  //   } else {
+  //     await userDoc.set({
+  //       'status': 'offline',
+  //       'last_online': FieldValue.serverTimestamp(),
+  //     }, SetOptions(merge: true));
+  //   }
+  // }
 
   Future<void> uploadUserMetadata() async {
     final User user = _auth.currentUser!;

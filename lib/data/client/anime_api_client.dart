@@ -21,11 +21,22 @@ abstract class AnimeApiClient {
   @GET("/anime/{id}")
   Future<SingleAnimeResponse> getAnimeById(@Path("id") int id);
 
+  @GET("/anime/{id}/recommendations")
+  Future<AnimeRecommendationResponse> getAnimeRecommendation(
+      @Path("id") int id);
+
   @GET("/anime")
   Future<AnimeResponse> searchAnime({
     @Query("q") required String query,
     @Query("page") int page = 1,
     @Query("limit") int limit = 25,
+  });
+
+  @GET("/top/anime")
+  Future<TopAnimeResponse> getTopAnime({
+    @Query("page") int page = 1,
+    @Query("limit") int limit = 25,
+    @Query("filter") String? filter, // airing, upcoming, bypopularity, favorite
   });
 }
 

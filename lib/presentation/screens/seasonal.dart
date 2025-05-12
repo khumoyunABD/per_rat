@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/client/jikan_service.dart';
 import 'package:per_rat/data/extensions/date_time_extensions.dart';
 import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/data/repositories/anime_repository.dart';
@@ -26,7 +27,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
   var _isLoading = true;
   String? _error;
 
-  final animeRepo = AnimeRepository();
+  final animeRepo = AnimeRepository(JikanService());
 
   @override
   void initState() {

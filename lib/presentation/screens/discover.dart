@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:per_rat/data/models/models.dart';
+// import 'package:per_rat/presentation/bloc/anime_bloc/anime_bloc.dart'; // anime_bloc seems unused
+import 'package:per_rat/presentation/bloc/top_anime_bloc/top_anime_bloc.dart'; // This should export events and states
 import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/screens/realtime_search.dart';
 import 'package:per_rat/presentation/widgets/discover_anime_item.dart';
@@ -7,50 +10,43 @@ import 'package:per_rat/presentation/widgets/discover_anime_item.dart';
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({
     super.key,
-    required this.ongoingAnime,
-    required this.trendingAnime,
-    required this.upcomingAnime,
   });
-
-  final List<Anime> ongoingAnime;
-  final List<Anime> trendingAnime;
-  final List<Anime> upcomingAnime;
 
   @override
   State<DiscoverScreen> createState() => _DiscoverScreenState();
 }
 
 class _DiscoverScreenState extends State<DiscoverScreen> {
-  // List<Anime> _registeredAnime = [];
   var searchName = '';
 
   @override
   void initState() {
     super.initState();
-    // _fetchAnime();
+    // Dispatch events to load all categories of top anime
+    context
+        .read<TopAnimeBloc>()
+        .add(const FetchTopAnimeEvent(filter: "airing"));
+
+    context
+        .read<TopAnimeBloc>()
+        .add(const FetchTopAnimeEvent(filter: "upcoming"));
+    context
+        .read<TopAnimeBloc>()
+        .add(const FetchTopAnimeEvent(filter: "bypopularity"));
   }
 
-  // void _fetchAnime() async {
-  //   List<Anime> loadedAnime = await loadAnimeFromFirestore();
-  //   setState(() {
-  //     _registeredAnime = loadedAnime;
-  //   });
-  // }
-
   void pickAnime(BuildContext context, Anime anime) {
+    // Changed Anime to Anime
+    // Assuming AnimeDetailsScreen can handle Anime or there's a mapping
+    // For now, we'll cast, but this might need a proper adapter if Anime != Anime
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (ctx) => AnimeDetailsScreen(
-          anime: anime,
+          anime: anime, // This cast might fail if types are incompatible
         ),
       ),
     );
   }
-
-  // void tapSearch(BuildContext context) {
-  //   Navigator.of(context).pushReplacement(
-  //       MaterialPageRoute(builder: (ctx) => SearchResultsScreen()));
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -108,23 +104,79 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ),
                 ),
               ),
-              SizedBox(
-                height: 300,
-                child: ListView.builder(
-                  //itemExtent: 155,
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(
-                      left: 15, right: 15, top: 15, bottom: 10),
-                  itemCount: widget.ongoingAnime.length,
-                  itemBuilder: (context, index) {
-                    return DiscoverAnimeItem(
-                      anime: widget.ongoingAnime[index],
-                      onPickAnime: (anime) {
-                        pickAnime(context, anime);
-                      },
+              BlocBuilder<TopAnimeBloc, TopAnimeState>(
+                buildWhen: (previous, current) {
+                  // Rebuild only if the state is relevant to "airing" or it's an initial/general loading
+                  if (current is TopAnimeLoading && current.filter == "airing")
+                    return true;
+                  if (current is TopAnimeLoaded && current.filter == "airing")
+                    return true;
+                  if (current is TopAnimeError && current.filter == "airing")
+                    return true;
+                  if (previous is TopAnimeInitial && current is TopAnimeLoading)
+                    return true; // Initial load
+                  return false;
+                },
+                builder: (context, state) {
+                  if (state is TopAnimeLoading && state.filter == "airing") {
+                    return const SizedBox(
+                        height: 300,
+                        child: Center(child: CircularProgressIndicator()));
+                  }
+                  if (state is TopAnimeLoaded && state.filter == "airing") {
+                    final animeList = state.topAnimeResponse.data;
+                    return SizedBox(
+                      height: 300,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(
+                            left: 15, right: 15, top: 15, bottom: 10),
+                        itemCount: animeList.length,
+                        itemBuilder: (context, index) {
+                          return DiscoverAnimeItem(
+                            anime: animeList[index],
+                            onPickAnime: (anime) {
+                              pickAnime(context, anime); // Pass Anime
+                            },
+                          );
+                        },
+                      ),
                     );
-                  },
-                ),
+                  }
+                  if (state is TopAnimeError && state.filter == "airing") {
+                    return SizedBox(
+                        height: 300,
+                        child: Center(child: Text('Error: ${state.message}')));
+                  }
+                  // Attempt to show previously loaded "airing" data if available and current state is for another filter
+                  final currentState = context.watch<TopAnimeBloc>().state;
+                  if (currentState is TopAnimeLoaded &&
+                      currentState.filter == "airing") {
+                    final animeList = currentState.topAnimeResponse.data;
+                    return SizedBox(
+                      height: 300,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(
+                            left: 15, right: 15, top: 15, bottom: 10),
+                        itemCount: animeList.length,
+                        itemBuilder: (context, index) {
+                          return DiscoverAnimeItem(
+                            anime: animeList[index],
+                            onPickAnime: (anime) {
+                              pickAnime(context, anime); // Pass Anime
+                            },
+                          );
+                        },
+                      ),
+                    );
+                  }
+                  return const SizedBox(
+                      height: 300,
+                      child: Center(
+                          child:
+                              CircularProgressIndicator())); // Default or initial state
+                },
               ),
               Padding(
                 padding: const EdgeInsets.only(
@@ -139,23 +191,80 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ),
                 ),
               ),
-              SizedBox(
-                height: 300,
-                child: ListView.builder(
-                  //itemExtent: 155,
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(
-                      left: 15, right: 15, top: 15, bottom: 10),
-                  itemCount: widget.trendingAnime.length,
-                  itemBuilder: (context, index) {
-                    return DiscoverAnimeItem(
-                      anime: widget.trendingAnime[index],
-                      onPickAnime: (anime) {
-                        pickAnime(context, anime);
-                      },
+              BlocBuilder<TopAnimeBloc, TopAnimeState>(
+                buildWhen: (previous, current) {
+                  if (current is TopAnimeLoading &&
+                      current.filter == "bypopularity") return true;
+                  if (current is TopAnimeLoaded &&
+                      current.filter == "bypopularity") return true;
+                  if (current is TopAnimeError &&
+                      current.filter == "bypopularity") return true;
+                  if (previous is TopAnimeInitial && current is TopAnimeLoading)
+                    return true;
+                  return false;
+                },
+                builder: (context, state) {
+                  if (state is TopAnimeLoading &&
+                      state.filter == "bypopularity") {
+                    return const SizedBox(
+                        height: 300,
+                        child: Center(child: CircularProgressIndicator()));
+                  }
+                  if (state is TopAnimeLoaded &&
+                      state.filter == "bypopularity") {
+                    final animeList = state.topAnimeResponse.data;
+                    return SizedBox(
+                      height: 300,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(
+                            left: 15, right: 15, top: 15, bottom: 10),
+                        itemCount: animeList.length,
+                        itemBuilder: (context, index) {
+                          return DiscoverAnimeItem(
+                            anime: animeList[index],
+                            onPickAnime: (anime) {
+                              pickAnime(context, anime); // Pass Anime
+                            },
+                          );
+                        },
+                      ),
                     );
-                  },
-                ),
+                  }
+                  if (state is TopAnimeError &&
+                      state.filter == "bypopularity") {
+                    return SizedBox(
+                        height: 300,
+                        child: Center(child: Text('Error: ${state.message}')));
+                  }
+                  final currentState = context.watch<TopAnimeBloc>().state;
+                  if (currentState is TopAnimeLoaded &&
+                      currentState.filter == "bypopularity") {
+                    final animeList = currentState.topAnimeResponse.data;
+                    return SizedBox(
+                      height: 300,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(
+                            left: 15, right: 15, top: 15, bottom: 10),
+                        itemCount: animeList.length,
+                        itemBuilder: (context, index) {
+                          return DiscoverAnimeItem(
+                            anime: animeList[index],
+                            onPickAnime: (anime) {
+                              pickAnime(context, anime);
+                            },
+                          );
+                        },
+                      ),
+                    );
+                  }
+                  return const SizedBox(
+                      height: 300,
+                      child: Center(
+                          child:
+                              CircularProgressIndicator())); // Default or initial state
+                },
               ),
               Padding(
                 padding: const EdgeInsets.only(
@@ -170,22 +279,66 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ),
                 ),
               ),
-              SizedBox(
-                height: 300,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(
-                      left: 15, right: 15, top: 15, bottom: 10),
-                  itemCount: widget.upcomingAnime.length,
-                  itemBuilder: (context, index) {
-                    return DiscoverAnimeItem(
-                      anime: widget.upcomingAnime[index],
-                      onPickAnime: (anime) {
-                        pickAnime(context, anime);
-                      },
+              BlocBuilder<TopAnimeBloc, TopAnimeState>(
+                builder: (context, state) {
+                  if (state is TopAnimeLoading && state.filter == 'upcoming') {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (state is TopAnimeLoaded && state.filter == 'upcoming') {
+                    final animeList = state.topAnimeResponse.data;
+                    return SizedBox(
+                      height: 300,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(
+                            left: 15, right: 15, top: 15, bottom: 10),
+                        itemCount: animeList.length,
+                        itemBuilder: (context, index) {
+                          return DiscoverAnimeItem(
+                            anime: animeList[index],
+                            onPickAnime: (anime) {
+                              pickAnime(context, anime);
+                            },
+                          );
+                        },
+                      ),
                     );
-                  },
-                ),
+                  }
+                  if (state is TopAnimeError && state.filter == 'upcoming') {
+                    return Center(child: Text('Error: ${state.message}'));
+                  }
+                  if (context.watch<TopAnimeBloc>().state is TopAnimeLoaded &&
+                      (context.watch<TopAnimeBloc>().state as TopAnimeLoaded)
+                              .filter ==
+                          'upcoming') {
+                    final animeList =
+                        (context.watch<TopAnimeBloc>().state as TopAnimeLoaded)
+                            .topAnimeResponse
+                            .data;
+                    return SizedBox(
+                      height: 300,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(
+                            left: 15, right: 15, top: 15, bottom: 10),
+                        itemCount: animeList.length,
+                        itemBuilder: (context, index) {
+                          return DiscoverAnimeItem(
+                            anime: animeList[index],
+                            onPickAnime: (anime) {
+                              pickAnime(context, anime);
+                            },
+                          );
+                        },
+                      ),
+                    );
+                  }
+                  return const SizedBox(
+                      height: 300,
+                      child: Center(
+                          child:
+                              CircularProgressIndicator())); // Default or initial state
+                },
               ),
             ],
           ),

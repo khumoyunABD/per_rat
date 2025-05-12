@@ -1,9 +1,7 @@
-import 'dart:developer';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/client/jikan_service.dart';
 import 'package:per_rat/data/extensions/theme_extension.dart';
-import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/drawer_screens/new_drawer.dart';
 import 'package:per_rat/presentation/drawer_screens/notifications_screen.dart';
@@ -26,31 +24,13 @@ class MainTabsScreen extends StatefulWidget {
 
 class _MainTabsScreenState extends State<MainTabsScreen> {
   int _selectedPageIndex = 0;
-  List<Anime> _registeredAnime = [];
+
   //final user = FirebaseAuth.instance.currentUser!;
-  final animeRepo = AnimeRepository();
+  final animeRepo = AnimeRepository(JikanService());
 
   @override
   void initState() {
     super.initState();
-    _fetchAnime();
-  }
-
-  void _fetchAnime() async {
-    try {
-      AnimeResponse response = await animeRepo.fetchAnime();
-
-      setState(() {
-        _registeredAnime = response.data;
-        // You can also store pagination info if needed
-        // _currentPage = response.pagination.currentPage;
-        // _hasNextPage = response.pagination.hasNextPage;
-      });
-    } catch (e) {
-      setState(() {
-        log(e.toString());
-      });
-    }
   }
 
   void _selectPage(int index) {
@@ -66,51 +46,14 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Safely filter ongoing anime
-    final ongoingAnime = _registeredAnime.where((anime) {
-      // Check if aired and its properties are not null
-      final now = DateTime.now();
-      final fromDate = anime.aired.from;
-      final toDate = anime.aired.to;
-
-      // If the start date is null, it can't be ongoing
-      if (fromDate == null) return false;
-
-      // Check if anime is currently airing (started but not ended, or has no end date)
-      return fromDate.isBefore(now) ||
-          fromDate.isAtSameMomentAs(now) &&
-              (toDate == null || toDate.year == 0);
-    }).toList();
-
     // Safely filter trending anime
-    final trendingAnime1 = _registeredAnime.where((anime) {
-      return anime.popularity! < 1000;
-    }).toList();
-
-    // Safely filter upcoming anime
-    final upcomingAnime = _registeredAnime.where((anime) {
-      // Check if aired and its properties are not null
-      final now = DateTime.now();
-      final fromDate = anime.aired.from;
-      final toDate = anime.aired.to;
-
-      // If the start date is null, it can't be ongoing
-      if (fromDate == null) return false;
-
-      // Check if anime is upcoming (hasn't started yet)
-      return fromDate.isAfter(now) && (toDate == null || toDate.year == 0);
-    }).toList();
 
     final user = FirebaseAuth.instance.currentUser!;
 
     Widget currentPage = const HomeScreen();
 
     if (_selectedPageIndex == 1) {
-      currentPage = DiscoverScreen(
-        ongoingAnime: ongoingAnime,
-        trendingAnime: trendingAnime1,
-        upcomingAnime: upcomingAnime,
-      );
+      currentPage = DiscoverScreen();
     }
     if (_selectedPageIndex == 2) {
       currentPage = const SeasonalScreen();
