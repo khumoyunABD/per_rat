@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:per_rat/data/models/anime_response.dart';
+import 'package:per_rat/data/models/models.dart';
 
 part 'single_anime_response.freezed.dart';
 part 'single_anime_response.g.dart';

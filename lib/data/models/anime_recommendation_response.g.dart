@@ -38,7 +38,7 @@ Map<String, dynamic> _$$RecommendationEntryImplToJson(
 
 _$AnimeEntryImpl _$$AnimeEntryImplFromJson(Map<String, dynamic> json) =>
     _$AnimeEntryImpl(
-      malId: (json['malId'] as num?)?.toInt(),
+      malId: (json['mal_id'] as num?)?.toInt(),
       url: json['url'] as String,
       images: AnimeImages.fromJson(json['images'] as Map<String, dynamic>),
       title: json['title'] as String,
@@ -46,7 +46,7 @@ _$AnimeEntryImpl _$$AnimeEntryImplFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$$AnimeEntryImplToJson(_$AnimeEntryImpl instance) =>
     <String, dynamic>{
-      'malId': instance.malId,
+      'mal_id': instance.malId,
       'url': instance.url,
       'images': instance.images,
       'title': instance.title,
@@ -70,14 +70,14 @@ Map<String, dynamic> _$$AnimeImagesImplToJson(_$AnimeImagesImpl instance) =>
 
 _$ImageUrlsImpl _$$ImageUrlsImplFromJson(Map<String, dynamic> json) =>
     _$ImageUrlsImpl(
-      imageUrl: json['imageUrl'] as String?,
-      smallImageUrl: json['smallImageUrl'] as String?,
-      largeImageUrl: json['largeImageUrl'] as String?,
+      imageUrl: json['image_url'] as String?,
+      smallImageUrl: json['small_image_url'] as String?,
+      largeImageUrl: json['large_image_url'] as String?,
     );
 
 Map<String, dynamic> _$$ImageUrlsImplToJson(_$ImageUrlsImpl instance) =>
     <String, dynamic>{
-      'imageUrl': instance.imageUrl,
-      'smallImageUrl': instance.smallImageUrl,
-      'largeImageUrl': instance.largeImageUrl,
+      'image_url': instance.imageUrl,
+      'small_image_url': instance.smallImageUrl,
+      'large_image_url': instance.largeImageUrl,
     };

@@ -391,6 +391,7 @@ AnimeEntry _$AnimeEntryFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$AnimeEntry {
+  @JsonKey(name: 'mal_id')
   int? get malId => throw _privateConstructorUsedError;
   String get url => throw _privateConstructorUsedError;
   AnimeImages get images => throw _privateConstructorUsedError;
@@ -412,7 +413,11 @@ abstract class $AnimeEntryCopyWith<$Res> {
           AnimeEntry value, $Res Function(AnimeEntry) then) =
       _$AnimeEntryCopyWithImpl<$Res, AnimeEntry>;
   @useResult
-  $Res call({int? malId, String url, AnimeImages images, String title});
+  $Res call(
+      {@JsonKey(name: 'mal_id') int? malId,
+      String url,
+      AnimeImages images,
+      String title});
 
   $AnimeImagesCopyWith<$Res> get images;
 }
@@ -476,7 +481,11 @@ abstract class _$$AnimeEntryImplCopyWith<$Res>
       __$$AnimeEntryImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int? malId, String url, AnimeImages images, String title});
+  $Res call(
+      {@JsonKey(name: 'mal_id') int? malId,
+      String url,
+      AnimeImages images,
+      String title});
 
   @override
   $AnimeImagesCopyWith<$Res> get images;
@@ -525,7 +534,7 @@ class __$$AnimeEntryImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$AnimeEntryImpl implements _AnimeEntry {
   const _$AnimeEntryImpl(
-      {this.malId,
+      {@JsonKey(name: 'mal_id') required this.malId,
       required this.url,
       required this.images,
       required this.title});
@@ -534,6 +543,7 @@ class _$AnimeEntryImpl implements _AnimeEntry {
       _$$AnimeEntryImplFromJson(json);
 
   @override
+  @JsonKey(name: 'mal_id')
   final int? malId;
   @override
   final String url;
@@ -580,7 +590,7 @@ class _$AnimeEntryImpl implements _AnimeEntry {
 
 abstract class _AnimeEntry implements AnimeEntry {
   const factory _AnimeEntry(
-      {final int? malId,
+      {@JsonKey(name: 'mal_id') required final int? malId,
       required final String url,
       required final AnimeImages images,
       required final String title}) = _$AnimeEntryImpl;
@@ -589,6 +599,7 @@ abstract class _AnimeEntry implements AnimeEntry {
       _$AnimeEntryImpl.fromJson;
 
   @override
+  @JsonKey(name: 'mal_id')
   int? get malId;
   @override
   String get url;
@@ -743,7 +754,7 @@ class __$$AnimeImagesImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AnimeImagesImpl implements _AnimeImages {
-  const _$AnimeImagesImpl({this.jpg, this.webp});
+  const _$AnimeImagesImpl({required this.jpg, required this.webp});
 
   factory _$AnimeImagesImpl.fromJson(Map<String, dynamic> json) =>
       _$$AnimeImagesImplFromJson(json);
@@ -788,8 +799,9 @@ class _$AnimeImagesImpl implements _AnimeImages {
 }
 
 abstract class _AnimeImages implements AnimeImages {
-  const factory _AnimeImages({final ImageUrls? jpg, final ImageUrls? webp}) =
-      _$AnimeImagesImpl;
+  const factory _AnimeImages(
+      {required final ImageUrls? jpg,
+      required final ImageUrls? webp}) = _$AnimeImagesImpl;
 
   factory _AnimeImages.fromJson(Map<String, dynamic> json) =
       _$AnimeImagesImpl.fromJson;
@@ -813,8 +825,11 @@ ImageUrls _$ImageUrlsFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$ImageUrls {
+  @JsonKey(name: 'image_url')
   String? get imageUrl => throw _privateConstructorUsedError;
+  @JsonKey(name: 'small_image_url')
   String? get smallImageUrl => throw _privateConstructorUsedError;
+  @JsonKey(name: 'large_image_url')
   String? get largeImageUrl => throw _privateConstructorUsedError;
 
   /// Serializes this ImageUrls to a JSON map.
@@ -832,7 +847,10 @@ abstract class $ImageUrlsCopyWith<$Res> {
   factory $ImageUrlsCopyWith(ImageUrls value, $Res Function(ImageUrls) then) =
       _$ImageUrlsCopyWithImpl<$Res, ImageUrls>;
   @useResult
-  $Res call({String? imageUrl, String? smallImageUrl, String? largeImageUrl});
+  $Res call(
+      {@JsonKey(name: 'image_url') String? imageUrl,
+      @JsonKey(name: 'small_image_url') String? smallImageUrl,
+      @JsonKey(name: 'large_image_url') String? largeImageUrl});
 }
 
 /// @nodoc
@@ -879,7 +897,10 @@ abstract class _$$ImageUrlsImplCopyWith<$Res>
       __$$ImageUrlsImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String? imageUrl, String? smallImageUrl, String? largeImageUrl});
+  $Res call(
+      {@JsonKey(name: 'image_url') String? imageUrl,
+      @JsonKey(name: 'small_image_url') String? smallImageUrl,
+      @JsonKey(name: 'large_image_url') String? largeImageUrl});
 }
 
 /// @nodoc
@@ -920,16 +941,21 @@ class __$$ImageUrlsImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ImageUrlsImpl implements _ImageUrls {
   const _$ImageUrlsImpl(
-      {this.imageUrl, this.smallImageUrl, this.largeImageUrl});
+      {@JsonKey(name: 'image_url') required this.imageUrl,
+      @JsonKey(name: 'small_image_url') required this.smallImageUrl,
+      @JsonKey(name: 'large_image_url') required this.largeImageUrl});
 
   factory _$ImageUrlsImpl.fromJson(Map<String, dynamic> json) =>
       _$$ImageUrlsImplFromJson(json);
 
   @override
+  @JsonKey(name: 'image_url')
   final String? imageUrl;
   @override
+  @JsonKey(name: 'small_image_url')
   final String? smallImageUrl;
   @override
+  @JsonKey(name: 'large_image_url')
   final String? largeImageUrl;
 
   @override
@@ -973,18 +999,22 @@ class _$ImageUrlsImpl implements _ImageUrls {
 
 abstract class _ImageUrls implements ImageUrls {
   const factory _ImageUrls(
-      {final String? imageUrl,
-      final String? smallImageUrl,
-      final String? largeImageUrl}) = _$ImageUrlsImpl;
+      {@JsonKey(name: 'image_url') required final String? imageUrl,
+      @JsonKey(name: 'small_image_url') required final String? smallImageUrl,
+      @JsonKey(name: 'large_image_url')
+      required final String? largeImageUrl}) = _$ImageUrlsImpl;
 
   factory _ImageUrls.fromJson(Map<String, dynamic> json) =
       _$ImageUrlsImpl.fromJson;
 
   @override
+  @JsonKey(name: 'image_url')
   String? get imageUrl;
   @override
+  @JsonKey(name: 'small_image_url')
   String? get smallImageUrl;
   @override
+  @JsonKey(name: 'large_image_url')
   String? get largeImageUrl;
 
   /// Create a copy of ImageUrls

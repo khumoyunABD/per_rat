@@ -43,7 +43,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
       // Check if the widget is still mounted before calling setState
       if (mounted) {
         setState(() {
-          _registeredAnime = response.data;
+          _registeredAnime = List<Anime>.from(response.data);
           _isLoading = false;
           // You can also store pagination info if needed
           // _currentPage = response.pagination.currentPage;
@@ -117,12 +117,10 @@ class _SeasonalScreenState extends State<SeasonalScreen>
         .toList();
 
     //archive tab
-
-    final numOfYears = _registeredAnime
-        .where((anime) => anime.aired.from != null) // Filter out nulls first
-        .map((anime) => anime.aired.from!.year) // Safe to use ! now
-        .toSet()
-        .toList();
+    final numOfYears = List<int>.from(_registeredAnime
+        .where((anime) => anime.aired.from != null)
+        .map((anime) => anime.aired.from!.year)
+        .toSet());
 
 // Sort years in descending order (if any exist)
     if (numOfYears.isNotEmpty) {

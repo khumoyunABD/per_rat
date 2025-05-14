@@ -28,7 +28,7 @@ class RecommendationEntry with _$RecommendationEntry {
 @freezed
 class AnimeEntry with _$AnimeEntry {
   const factory AnimeEntry({
-    int? malId,
+    @JsonKey(name: 'mal_id') required int? malId,
     required String url,
     required AnimeImages images,
     required String title,
@@ -41,8 +41,8 @@ class AnimeEntry with _$AnimeEntry {
 @freezed
 class AnimeImages with _$AnimeImages {
   const factory AnimeImages({
-    ImageUrls? jpg,
-    ImageUrls? webp,
+    required ImageUrls? jpg,
+    required ImageUrls? webp,
   }) = _AnimeImages;
 
   factory AnimeImages.fromJson(Map<String, dynamic> json) =>
@@ -52,9 +52,9 @@ class AnimeImages with _$AnimeImages {
 @freezed
 class ImageUrls with _$ImageUrls {
   const factory ImageUrls({
-    String? imageUrl,
-    String? smallImageUrl,
-    String? largeImageUrl,
+    @JsonKey(name: 'image_url') required String? imageUrl,
+    @JsonKey(name: 'small_image_url') required String? smallImageUrl,
+    @JsonKey(name: 'large_image_url') required String? largeImageUrl,
   }) = _ImageUrls;
 
   factory ImageUrls.fromJson(Map<String, dynamic> json) =>
