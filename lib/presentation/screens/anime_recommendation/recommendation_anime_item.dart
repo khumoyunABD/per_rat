@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:per_rat/data/models/models.dart';
 
@@ -11,8 +13,20 @@ class RecommendedAnimeItem extends StatelessWidget {
   final AnimeEntry animeEntry;
   final VoidCallback onTap;
 
+  String getImageUrl() {
+    // Try jpg first, then webp, then fallback to empty string
+    return animeEntry.images.jpg?.imageUrl ??
+        animeEntry.images.jpg?.largeImageUrl ??
+        animeEntry.images.webp?.imageUrl ??
+        animeEntry.images.webp?.largeImageUrl ??
+        '';
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Add logging here
+    log('Anime Entry ID: ${animeEntry.malId}, Title: ${animeEntry.title}');
+    log('Image URLs: JPG=${animeEntry.images.jpg?.imageUrl}, WebP=${animeEntry.images.webp?.imageUrl}');
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -25,7 +39,7 @@ class RecommendedAnimeItem extends StatelessWidget {
               borderRadius:
                   BorderRadius.circular(8.0), // Optional: for rounded corners
               child: Image.network(
-                animeEntry.images.jpg!.imageUrl ?? '',
+                getImageUrl(),
                 height: 200,
                 width: 150,
                 fit: BoxFit.cover,
