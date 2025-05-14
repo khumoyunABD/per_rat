@@ -5,15 +5,13 @@ class AllAnimeItem extends StatelessWidget {
   const AllAnimeItem({
     super.key,
     required this.showRating,
-    required this.anime,
-    required this.onSelectRating,
+    required this.onTap,
     required this.onEditRating,
   });
 
   final ShowRating showRating;
-  final Anime anime;
 
-  final void Function(ShowRating showRating) onSelectRating;
+  final VoidCallback onTap;
   final void Function(ShowRating showRating) onEditRating;
 
   @override
@@ -25,9 +23,7 @@ class AllAnimeItem extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () {
-          onSelectRating(showRating);
-        },
+        onTap: onTap,
         child: Container(
           color: const Color.fromARGB(255, 79, 53, 45),
           child: Row(
@@ -37,7 +33,7 @@ class AllAnimeItem extends StatelessWidget {
                 height: 140,
                 decoration: BoxDecoration(
                   image: DecorationImage(
-                    image: NetworkImage(anime.mainImageUrl),
+                    image: NetworkImage(showRating.imageUrl ?? ''),
                     // assuming imageUrl is a part of showRating
                     fit: BoxFit.cover,
                   ),
@@ -50,7 +46,7 @@ class AllAnimeItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        showRating.showName,
+                        showRating.title,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -73,7 +69,7 @@ class AllAnimeItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Progress: ${showRating.progress} / ${anime.episodes}',
+                        'Progress: ${showRating.completedEpisodes} / ${showRating.totalEpisodes}',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Color.fromARGB(248, 214, 99, 33),

@@ -1,13 +1,16 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/client/jikan_service.dart';
 import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/data/repositories/anime_repository.dart';
+// import 'package:per_rat/data/repositories/anime_repository.dart'; // Removed
 import 'package:per_rat/data/repositories/firestore_service.dart';
 import 'package:per_rat/data/repositories/messaging_service.dart';
-import 'package:per_rat/presentation/screens/show_rating_details_screen.dart';
+import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/widgets/home_anime_skeleton.dart';
 import 'package:per_rat/presentation/widgets/home_grid_anime_item.dart';
 
@@ -23,7 +26,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final FirestoreService _firestoreService =
       FirestoreService(); // Initialize the Firestore service
-  List<Anime> _registeredAnime = [];
+
   String? _error;
   bool _isLoading = true; // Add a loading state
 
@@ -31,8 +34,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final user = FirebaseAuth.instance.currentUser!;
   List<ShowRating> _showratings = [];
 
-  //getting Anime
-  Anime? animeSet;
+  final animeRepo = AnimeRepository(JikanService());
 
   //chat
   final MessagingService _messagingService = MessagingService();
@@ -40,32 +42,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   //selection mode
   bool _isSelectionMode = false;
   List<ShowRating> _selectedRatings = [];
-
-  final animeRepo = AnimeRepository();
-
-  void _fetchAnime() async {
-    try {
-      AnimeResponse response = await animeRepo.fetchAnime();
-
-      if (mounted) {
-        setState(() {
-          _registeredAnime = response.data;
-          // You can also store pagination info if needed
-          // _currentPage = response.pagination.currentPage;
-          // _hasNextPage = response.pagination.hasNextPage;
-        });
-
-        _checkLoadingState();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Failed to load anime: $e';
-          _isLoading = false;
-        });
-      }
-    }
-  }
 
   Future<void> displayRating() async {
     try {
@@ -83,8 +59,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _showratings = filteredRatings;
+          setState(() {
+            _isLoading = false;
+          });
         });
-        _checkLoadingState();
+        //_checkLoadingState();
       }
     } catch (e) {
       if (mounted) {
@@ -102,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .collection('users')
           .doc(user.uid)
           .collection('ratings')
-          .doc(showRating.showName) // Assuming showName is the document ID
+          .doc(showRating.malId.toString()) // Assuming title is the document ID
           .delete();
 
       if (mounted) {
@@ -121,20 +100,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error deleting ${showRating.showName}: $e'),
+            content: Text('Error deleting ${showRating.title}: $e'),
           ),
         );
       }
     }
-  }
-
-  Anime? getAnimeFromShowrating(ShowRating showrating) {
-    for (Anime anime in _registeredAnime) {
-      if (anime.title == showrating.showName) {
-        return anime;
-      }
-    }
-    return null;
   }
 
   void _toggleSelectionMode() {
@@ -156,25 +126,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-// Check if both anime and ratings have been loaded
-  void _checkLoadingState() {
-    if (mounted &&
-        (_registeredAnime.isNotEmpty ||
-            _showratings.isNotEmpty ||
-            _error != null)) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+// Check if ratings have been loaded
+  // void _checkLoadingState() {
+  //   if (mounted && (_showratings.isNotEmpty || _error != null)) {
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+  //   }
+  // }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _firestoreService.setUserOnlineStatus(true); // Set user status to online
     _initializeData();
-    _fetchAnime();
     displayRating();
     _messagingService.initialize();
   }
@@ -197,25 +162,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      _firestoreService.setUserOnlineStatus(
-          false); // Set user status to offline when the app is paused or inactive
-    } else if (state == AppLifecycleState.resumed) {
-      _firestoreService.setUserOnlineStatus(
-          true); // Set user status to online when the app is resumed
-    }
-  }
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   if (state == AppLifecycleState.paused ||
+  //       state == AppLifecycleState.inactive) {
+  //     _firestoreService.setUserOnlineStatus(
+  //         false); // Set user status to offline when the app is paused or inactive
+  //   } else if (state == AppLifecycleState.resumed) {
+  //     _firestoreService.setUserOnlineStatus(
+  //         true); // Set user status to online when the app is resumed
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
-    void selectRating(BuildContext context, ShowRating showRating) {
+    void pickAnime(BuildContext context, Anime anime, ShowRating rating) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (ctx) => ShowRatingDetails(
-            showRating: showRating,
+          builder: (ctx) => AnimeDetailsScreen(
+            anime: anime,
+            showRating: rating,
           ),
         ),
       );
@@ -245,25 +211,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 itemCount: _showratings.length,
                 itemBuilder: (context, index) {
                   var rating = _showratings[index];
-                  animeSet = getAnimeFromShowrating(rating);
-                  if (animeSet == null) {
-                    return const Text('No ratings added');
-                  }
+                  // animeSet = getAnimeFromShowrating(rating); // Removed
+                  // if (animeSet == null) { // Removed, assuming showRating will always have necessary data
+                  //   return const Text('Error displaying rating'); // Or some other placeholder
+                  // } // Removed
                   return GestureDetector(
                     onLongPress: () {
                       _toggleSelectionMode();
                       _toggleRatingSelection(rating);
                     },
-                    onTap: () {
+                    onTap: () async {
                       if (_isSelectionMode) {
                         _toggleRatingSelection(rating);
                       } else {
-                        selectRating(context, rating);
+                        try {
+                          // Fetches the full details of an anime by its MAL ID
+                          // and returns an Anime object compatible with AnimeDetailsScreen.
+                          Anime fullAnimeDetails =
+                              await animeRepo.fetchAnimeById(rating.malId);
+                          if (!mounted)
+                            return; // Check if the widget is still in the tree
+                          pickAnime(context, fullAnimeDetails, rating);
+                        } catch (e) {
+                          log('Error fetching recommended anime details: $e');
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'Failed to load anime details. Please try again.')),
+                          );
+                        }
                       }
                     },
                     child: HomeAnimeGridItem(
                       showRating: rating,
-                      anime: animeSet!,
+                      // anime: animeSet!, // Removed
                       isSelected: _selectedRatings.contains(rating),
                       onDeleteRating: (rating) {
                         deleteRating(rating);

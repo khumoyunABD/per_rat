@@ -1,21 +1,24 @@
 import 'dart:developer';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/client/jikan_service.dart';
 import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/data/repositories/anime_repository.dart';
+import 'package:per_rat/presentation/screens/anime_recommendation/recommendation_anime_item.dart';
 import 'package:per_rat/presentation/screens/edit_score_screen.dart';
 import 'package:per_rat/presentation/widgets/showDetailsSkeleton.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class AnimeDetailsScreen extends StatefulWidget {
-  const AnimeDetailsScreen({
+  AnimeDetailsScreen({
     super.key,
     required this.anime,
+    this.showRating,
   });
 
   final Anime anime;
+  final ShowRating? showRating;
 
   @override
   State<AnimeDetailsScreen> createState() => _AnimeDetailsScreenState();
@@ -25,11 +28,12 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
   late YoutubePlayerController _controller;
   //List<Anime> _registeredAnime = [];
   bool _isLoading = true; // Add a loading state
+  List<RecommendationEntry> _animeRecommendations = [];
 
   final user = FirebaseAuth.instance.currentUser!;
   bool movieExists = false;
 
-  final animeRepo = AnimeRepository();
+  final animeRepo = AnimeRepository(JikanService());
 
   @override
   void initState() {
@@ -48,37 +52,41 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
     );
     super.initState();
 
-    checkIfMovieExists();
-    // _fetchAnime();
+    log(widget.showRating.toString());
 
-    log(widget.anime.toString());
+    // checkIfMovieExists();
+    _fetchAnimeRecommendation();
+
+    log('Anime ID in Details is: ${widget.anime.malId}');
+
+    // log(widget.anime.toString());
     _isLoading = false;
   }
 
-  // void _fetchAnime() async {
-  //   List<Anime> loadedAnime = await animeRepo.fetchAllAnime();
-  //   setState(() {
-  //     _registeredAnime = loadedAnime;
-  //     _isLoading = false;
-  //   });
-  // }
-
-  Future<void> checkIfMovieExists() async {
-    try {
-      DocumentReference userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(user.uid);
-      CollectionReference ratingCollectionRef =
-          userDocRef.collection('ratings');
-
-      DocumentSnapshot docSnapshot =
-          await ratingCollectionRef.doc(widget.anime.title).get();
-      setState(() {
-        movieExists = docSnapshot.exists;
-      });
-    } catch (error) {
-      print("Error checking movie existence: $error");
-    }
+  void _fetchAnimeRecommendation() async {
+    List<RecommendationEntry> recommendations =
+        await animeRepo.fetchAnimeRecommendation(widget.anime.malId ?? 0);
+    setState(() {
+      _animeRecommendations = recommendations;
+    });
   }
+
+  // Future<void> checkIfMovieExists() async {
+  //   try {
+  //     DocumentReference userDocRef =
+  //         FirebaseFirestore.instance.collection('users').doc(user.uid);
+  //     CollectionReference ratingCollectionRef =
+  //         userDocRef.collection('ratings');
+
+  //     DocumentSnapshot docSnapshot =
+  //         await ratingCollectionRef.doc(widget.anime.malId.toString()).get();
+  //     setState(() {
+  //       movieExists = docSnapshot.exists;
+  //     });
+  //   } catch (error) {
+  //     log("Error checking movie existence: $error");
+  //   }
+  // }
 
   void pickAnime(BuildContext context, Anime anime) {
     Navigator.of(context).push(
@@ -98,15 +106,6 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final List<Anime> similarAnime = _registeredAnime.where((anime) {
-    //   // Find common genres between the two anime
-    //   int commonGenres =
-    //       anime.genre.where((g) => widget.anime.genre.contains(g)).length;
-
-    //   // Only include anime with at least 2 similar genres and different title
-    //   return commonGenres >= 2 && anime.title != widget.anime.title;
-    // }).toList();
-
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: AppBar(
@@ -133,9 +132,11 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                    builder: (ctx) => EditScoreScreen(
-                          anime: widget.anime,
-                        )),
+                  builder: (ctx) => EditScoreScreen(
+                    anime: widget.anime,
+                    rating: widget.showRating,
+                  ),
+                ),
               );
             },
             //icon: Icon(movieExists ? Icons.edit : Icons.add),
@@ -159,51 +160,7 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                       height: 300,
                     ),
                   ),
-                  // Replace the current image widget with this updated version
-                  // Center(
-                  //   child: widget.anime.images?.jpg?.imageUrl != null &&
-                  //           widget.anime.images!.jpg!.imageUrl!.isNotEmpty
-                  //       ? Image.network(
-                  //           widget.anime.images!.jpg!.imageUrl!,
-                  //           height: 300,
-                  //           loadingBuilder: (context, child, loadingProgress) {
-                  //             if (loadingProgress == null) return child;
-                  //             return Center(
-                  //               child: CircularProgressIndicator(
-                  //                 value: loadingProgress.expectedTotalBytes !=
-                  //                         null
-                  //                     ? loadingProgress.cumulativeBytesLoaded /
-                  //                         loadingProgress.expectedTotalBytes!
-                  //                     : null,
-                  //               ),
-                  //             );
-                  //           },
-                  //           errorBuilder: (context, error, stackTrace) {
-                  //             return Container(
-                  //               height: 300,
-                  //               color: Colors.grey[700],
-                  //               child: Center(
-                  //                 child: Icon(
-                  //                   Icons.image_not_supported,
-                  //                   size: 50,
-                  //                   color: Colors.white,
-                  //                 ),
-                  //               ),
-                  //             );
-                  //           },
-                  //         )
-                  //       : Container(
-                  //           height: 300,
-                  //           color: Colors.grey[700],
-                  //           child: Center(
-                  //             child: Icon(
-                  //               Icons.image_not_supported,
-                  //               size: 50,
-                  //               color: Colors.white,
-                  //             ),
-                  //           ),
-                  //         ),
-                  // ),
+
                   SizedBox(height: 16),
                   Center(
                     child: Text(
@@ -299,51 +256,55 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                   ),
                   SizedBox(height: 16),
 
-                  ///similar anime section
-                  Text(
-                    'Similar Anime',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 97, 70, 152),
+                  // Recommendations Section
+                  if (_animeRecommendations.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'Recommendations',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
-                  // if (similarAnime.isEmpty)
-                  //   Container(
-                  //     height: 100,
-                  //     alignment: Alignment.bottomCenter,
-                  //     child: const Center(
-                  //       child: Text(
-                  //         'No similar anime were found!',
-                  //         style: TextStyle(color: Colors.white),
-                  //       ),
-                  //     ),
-                  //   ),
-                  // if (similarAnime.isNotEmpty)
-                  //   SizedBox(
-                  //     height: 240,
-                  //     child: ListView.builder(
-                  //       itemExtent: 155,
-                  //       scrollDirection: Axis.horizontal,
-                  //       padding: const EdgeInsets.only(
-                  //           left: 5, right: 15, top: 15, bottom: 10),
-                  //       itemCount: similarAnime.length,
-                  //       itemBuilder: (context, index) {
-                  //         return SimilarAnimeItem(
-                  //           anime: similarAnime[index],
-                  //           onPickAnime: (anime) {
-                  //             pickAnime(context, anime);
-                  //           },
-                  //         );
-                  //       },
-                  //     ),
-                  //   ),
-                  const SizedBox(
-                    height: 30,
-                  ),
+                    SizedBox(
+                      height: 250, // Height for the horizontal list
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _animeRecommendations.length,
+                        itemBuilder: (context, index) {
+                          final recommendation = _animeRecommendations[index];
+                          final animeEntry = recommendation.entry;
 
-                  // SizedBox(height: 8),
-                  // _buildSimilarAnimeList(similarAnime),
+                          return RecommendedAnimeItem(
+                            animeEntry: animeEntry,
+                            onTap: () async {
+                              try {
+                                // Fetches the full details of an anime by its MAL ID
+                                // and returns an Anime object compatible with AnimeDetailsScreen.
+                                Anime fullAnimeDetails = await animeRepo
+                                    .fetchAnimeById(animeEntry.malId ?? 0);
+                                if (!mounted)
+                                  return; // Check if the widget is still in the tree
+                                pickAnime(context, fullAnimeDetails);
+                              } catch (e) {
+                                log('Error fetching recommended anime details: $e');
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Failed to load anime details. Please try again.')),
+                                );
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 30), // Spacing after the list
+                  ],
                 ],
               ),
             ),

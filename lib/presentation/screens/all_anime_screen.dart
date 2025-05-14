@@ -1,12 +1,14 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/client/jikan_service.dart';
 import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/data/repositories/anime_repository.dart';
-import 'package:per_rat/presentation/screens/edit_ratings.dart';
-import 'package:per_rat/presentation/screens/show_rating_details_screen.dart';
+import 'package:per_rat/presentation/screens/anime_details.dart';
+import 'package:per_rat/presentation/screens/edit_score_screen.dart'; // Changed import
 import 'package:per_rat/presentation/widgets/all_anime_item.dart';
 import 'package:per_rat/presentation/widgets/all_anime_item_skeleton.dart';
 
@@ -20,7 +22,7 @@ class AllAnimeScreen extends StatefulWidget {
 }
 
 class _AllAnimeScreenState extends State<AllAnimeScreen> {
-  List<Anime> _registeredAnime = [];
+  //List<Anime> _registeredAnime = [];
   String? _error;
   bool _isLoading = true; // Add a loading state
 
@@ -28,34 +30,7 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
   final user = FirebaseAuth.instance.currentUser!;
   List<ShowRating> _showratings = [];
 
-  //getting Anime
-  Anime? animeSet;
-
-  final animeRepo = AnimeRepository();
-
-  void _fetchAnime() async {
-    try {
-      AnimeResponse response = await animeRepo.fetchAnime();
-
-      if (mounted) {
-        setState(() {
-          _registeredAnime = response.data;
-          // You can also store pagination info if needed
-          // _currentPage = response.pagination.currentPage;
-          // _hasNextPage = response.pagination.hasNextPage;
-        });
-
-        _checkLoadingState();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Failed to load anime: $e';
-          _isLoading = false;
-        });
-      }
-    }
-  }
+  final animeRepo = AnimeRepository(JikanService()); // Pass JikanService instance
 
   Future<void> displayRating() async {
     try {
@@ -73,8 +48,8 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
       if (mounted) {
         setState(() {
           _showratings = filteredRatings;
+          _isLoading = false;
         });
-        _checkLoadingState();
       }
     } catch (e) {
       if (mounted) {
@@ -86,31 +61,9 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
     }
   }
 
-// Check if both anime and ratings have been loaded
-  void _checkLoadingState() {
-    if (mounted &&
-        (_registeredAnime.isNotEmpty ||
-            _showratings.isNotEmpty ||
-            _error != null)) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Anime? getAnimeFromShowrating(ShowRating showrating) {
-    for (Anime anime in _registeredAnime) {
-      if (anime.title == showrating.showName) {
-        return anime;
-      }
-    }
-    return null;
-  }
-
   @override
   void initState() {
     super.initState();
-    _fetchAnime();
     displayRating();
 
     // Set a timer to stop showing the skeleton after a limited time
@@ -123,20 +76,22 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    void selectRating(BuildContext context, ShowRating showRating) {
+    void pickAnime(BuildContext context, Anime anime) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (ctx) => ShowRatingDetails(
-            showRating: showRating,
+          builder: (ctx) => AnimeDetailsScreen(
+            anime: anime,
           ),
         ),
       );
     }
 
-    void editRating(BuildContext context, ShowRating showRating) {
+    // Modified editRating to accept Anime and ShowRating
+    void editRating(BuildContext context, Anime anime, ShowRating showRating) {
       Navigator.of(context).push(MaterialPageRoute(
-          builder: (ctx) => EditRatingsScreen(
-                showRating: showRating,
+          builder: (ctx) => EditScoreScreen( // Changed to EditScoreScreen
+                anime: anime, // Pass anime
+                rating: showRating,
               )));
     }
 
@@ -158,20 +113,45 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
                 itemCount: _showratings.length,
                 itemBuilder: (context, index) {
                   var rating = _showratings[index];
-                  animeSet = getAnimeFromShowrating(rating);
 
-                  // Skip rendering if no matching anime is found
-                  if (animeSet == null) {
-                    return SizedBox.shrink(); // Returns an empty widget
-                  }
                   return AllAnimeItem(
                       showRating: rating,
-                      anime: animeSet!,
-                      onSelectRating: (rating) {
-                        selectRating(context, rating);
+                      onTap: () async {
+                        try {
+                          // Fetches the full details of an anime by its MAL ID
+                          // and returns an Anime object compatible with AnimeDetailsScreen.
+                          Anime fullAnimeDetails =
+                              await animeRepo.fetchAnimeById(rating.malId);
+                          if (!mounted)
+                            return; // Check if the widget is still in the tree
+                          pickAnime(context, fullAnimeDetails);
+                        } catch (e) {
+                          log('Error fetching recommended anime details: $e');
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'Failed to load anime details. Please try again.')),
+                          );
+                        }
                       },
-                      onEditRating: (showRating) {
-                        editRating(context, showRating);
+                      onEditRating: (showRating) async { // Make async
+                        try {
+                          // Fetches the full details of an anime by its MAL ID
+                          Anime fullAnimeDetails =
+                              await animeRepo.fetchAnimeById(showRating.malId);
+                          if (!mounted) return; // Check if the widget is still in the tree
+                          // Now call editRating with the fetched Anime object and the ShowRating
+                          editRating(context, fullAnimeDetails, showRating);
+                        } catch (e) {
+                          log('Error fetching anime details for editing: $e');
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'Failed to load anime details for editing. Please try again.')),
+                          );
+                        }
                       });
                 },
               );
@@ -188,35 +168,5 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
     return Scaffold(
       body: content,
     );
-
-    // final Stream<QuerySnapshot> dataStream = FirebaseFirestore.instance
-    //     .collection('users')
-    //     .doc(user.uid)
-    //     .collection('ratings')
-    //     .orderBy('timestamp', descending: true)
-    //     .snapshots();
-
-    // return Scaffold(
-    //   body: StreamBuilder<QuerySnapshot>(
-    //     stream: dataStream,
-    //     builder: (context, snapshot) {
-    //       if (snapshot.connectionState == ConnectionState.waiting) {
-    //         return Center(child: CircularProgressIndicator());
-    //       }
-
-    //       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-    //         return Center(
-    //             child: Text(
-    //           'No ratings found.',
-    //           style: TextStyle(
-    //             color: Theme.of(context).colorScheme.primary,
-    //           ),
-    //         ));
-    //       }
-
-    //       return content;
-    //     },
-    //   ),
-    // );
   }
 }

@@ -3,81 +3,22 @@ import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
-import 'package:per_rat/data/client/anime_api_client.dart';
+import 'package:per_rat/data/client/jikan_service.dart'; // Updated import
 import 'package:per_rat/data/models/models.dart';
 
 class AnimeRepository {
-  late final AnimeApiClient _apiClient;
-  late final Dio _dio;
+  AnimeRepository(this._jikanService);
 
-  // Rate limiting - Jikan API typically requires a delay between requests
-  DateTime? _lastApiCall;
-  final Duration _rateLimitDuration = Duration(milliseconds: 400);
-
+  final JikanService _jikanService; // Use JikanService
   final logger = Logger();
 
-  AnimeRepository() {
-    _dio = Dio();
-    _configureClient();
-  }
-
-  void _configureClient() {
-    // Configure base Dio settings
-    _dio.options.connectTimeout = Duration(milliseconds: 5000); // 5 seconds
-    _dio.options.receiveTimeout = Duration(milliseconds: 10000); // 10 seconds
-    _dio.options.baseUrl = 'https://api.jikan.moe/v4';
-
-    // Add logging interceptor
-    _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        logPrint: (object) => developer.log(object.toString(), name: 'API'),
-      ),
-    );
-
-    // Add rate limiting interceptor
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          await _respectRateLimit();
-          return handler.next(options);
-        },
-        onError: (DioException error, handler) async {
-          developer.log('API Error: ${error.message}',
-              name: 'API Error', error: error);
-
-          if (error.response?.statusCode == 429) {
-            // If rate limited, wait and retry
-            await Future.delayed(Duration(seconds: 2));
-            return handler.resolve(await _dio.fetch(error.requestOptions));
-          }
-          return handler.next(error);
-        },
-      ),
-    );
-
-    // Create the API client
-    _apiClient = AnimeApiClient(_dio);
-  }
-
-  // Helper method to respect rate limits
-  Future<void> _respectRateLimit() async {
-    if (_lastApiCall != null) {
-      final timeSinceLastCall = DateTime.now().difference(_lastApiCall!);
-      if (timeSinceLastCall < _rateLimitDuration) {
-        final waitTime = _rateLimitDuration - timeSinceLastCall;
-        await Future.delayed(waitTime);
-      }
-    }
-    _lastApiCall = DateTime.now();
-  }
+  // Constructor now takes JikanService
 
   /// Fetches anime data from the Jikan API with optional pagination
   Future<AnimeResponse> fetchAnime({int page = 1, int limit = 25}) async {
     try {
-      // Using the API client for consistency
-      return await _apiClient.getAnime(page: page, limit: limit);
+      // Using the API client from JikanService
+      return await _jikanService.apiClient.getAnime(page: page, limit: limit);
     } catch (e, stackTrace) {
       developer.log(
         'Error fetching anime list',
@@ -96,8 +37,8 @@ class AnimeRepository {
   /// Alternative implementation using direct Dio if you prefer not to use Retrofit
   Future<AnimeResponse> fetchAnimeListDirect() async {
     try {
-      // The rate limiting is already handled by the interceptor
-      final response = await _dio.get<Map<String, dynamic>>(
+      // The rate limiting is handled by JikanService's Dio instance
+      final response = await _jikanService.dio.get<Map<String, dynamic>>(
         '/anime',
         queryParameters: {
           'page': 1,
@@ -161,7 +102,7 @@ class AnimeRepository {
   /// Fetches a specific anime by its MAL ID
   Future<Anime> fetchAnimeById(int id) async {
     try {
-      final response = await _apiClient.getAnimeById(id);
+      final response = await _jikanService.apiClient.getAnimeById(id);
       return response.data;
     } catch (e, stackTrace) {
       developer.log(
@@ -178,10 +119,29 @@ class AnimeRepository {
     }
   }
 
+  Future<List<RecommendationEntry>> fetchAnimeRecommendation(int id) async {
+    try {
+      final response = await _jikanService.apiClient.getAnimeRecommendation(id);
+      return response.data;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error fetching anime by ID: $id',
+        name: 'Repository Error',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      if (e is DioException) {
+        throw Exception('API Error: ${e.message}');
+      }throw Exception('Failed to fetch anime by ID: $e');
+    }
+  }
+
   /// Direct implementation for fetching anime by ID without Retrofit
   Future<Anime> fetchAnimeByIdDirect(int id) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>('/anime/$id');
+      final response =
+          await _jikanService.dio.get<Map<String, dynamic>>('/anime/$id');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final animeResponse = AnimeResponse.fromJson(response.data!);
@@ -204,7 +164,7 @@ class AnimeRepository {
   Future<AnimeResponse> searchAnime(String query,
       {int page = 1, int limit = 25}) async {
     try {
-      return await _apiClient.searchAnime(
+      return await _jikanService.apiClient.searchAnime(
         query: query,
         page: page,
         limit: limit,
@@ -228,7 +188,7 @@ class AnimeRepository {
   Future<AnimeResponse> searchAnimeDirect(String query,
       {int page = 1, int limit = 25}) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(
+      final response = await _jikanService.dio.get<Map<String, dynamic>>(
         '/anime',
         queryParameters: {
           'q': query,
@@ -249,4 +209,67 @@ class AnimeRepository {
       throw Exception('Failed to search anime: $e and stacktrace: $stackTrace');
     }
   }
+
+  /// Fetches top anime data from the Jikan API with optional pagination and filter
+  Future<TopAnimeResponse> fetchTopAnime({
+    int page = 1,
+    int limit = 25,
+    String? filter,
+  }) async {
+    try {
+      final response = await _jikanService.apiClient.getTopAnime(
+        page: page,
+        limit: limit,
+        filter: filter,
+      );
+
+      logger.d('Top Anime response: $response ');
+
+      return response;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error fetching top anime list with filter: $filter',
+        name: 'Repository Error',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      if (e is DioException) {
+        throw Exception('API Error: ${e.message}');
+      }
+      throw Exception('Failed to fetch top anime: $e');
+    }
+  }
+
+  /// Fetches top airing anime
+  // Future<TopAnimeResponse> fetchTopAiringAnime({
+  //   int page = 1,
+  //   int limit = 25,
+  // }) {
+  //   return fetchTopAnime(page: page, limit: limit, filter: 'airing');
+  // }
+
+  /// Fetches top upcoming anime
+  // Future<TopAnimeResponse> fetchTopUpcomingAnime({
+  //   int page = 1,
+  //   int limit = 25,
+  // }) {
+  //   return fetchTopAnime(page: page, limit: limit, filter: 'upcoming');
+  // }
+
+  /// Fetches top anime by popularity
+  // Future<TopAnimeResponse> fetchTopByPopularityAnime({
+  //   int page = 1,
+  //   int limit = 25,
+  // }) {
+  //   return fetchTopAnime(page: page, limit: limit, filter: 'bypopularity');
+  // }
+
+  /// Fetches top favorite anime
+  // Future<TopAnimeResponse> fetchTopFavoriteAnime({
+  //   int page = 1,
+  //   int limit = 25,
+  // }) {
+  //   return fetchTopAnime(page: page, limit: limit, filter: 'favorite');
+  // }
 }

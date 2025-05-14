@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:per_rat/presentation/components/constants.dart';
-import 'package:per_rat/data/repositories/firestore_service.dart';
 import 'package:per_rat/presentation/drawer_screens/friends_screen.dart';
 import 'package:per_rat/presentation/drawer_screens/messages.dart';
 import 'package:per_rat/presentation/drawer_screens/new_communities.dart';
@@ -25,11 +24,7 @@ class NewDrawer extends StatefulWidget {
 }
 
 class _NewDrawerState extends State<NewDrawer> {
-  final FirestoreService _firestoreService =
-      FirestoreService(); // Initialize the Firestore service
-
   void signUserOut() async {
-    await _firestoreService.setUserOnlineStatus(false);
     GoogleSignIn().signOut();
     FirebaseAuth.instance.signOut();
     Navigator.pop(context);

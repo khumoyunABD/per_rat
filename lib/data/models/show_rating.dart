@@ -1,28 +1,42 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ShowRating {
-  final String showName;
+  final int malId;
+  final String title;
+  String? imageUrl;
   final String status;
-  String? progress;
-  String? score;
+  int? score;
+  int? completedEpisodes;
+  int? totalEpisodes;
+  List<String>? genres;
   final Timestamp timestamp;
 
   ShowRating({
-    required this.showName,
+    required this.malId,
+    required this.title,
     required this.status,
-    this.progress,
+    this.imageUrl,
     this.score,
+    this.completedEpisodes,
+    this.totalEpisodes,
+    this.genres,
     required this.timestamp,
   });
 
   factory ShowRating.fromFirestore(DocumentSnapshot doc) {
-    Map data = doc.data() as Map<String, dynamic>;
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return ShowRating(
-      showName: doc.id,
-      status: data['status'] ?? '',
-      progress: data['progress'] ?? '',
-      score: data['score'] ?? '',
-      timestamp: data['timestamp'] ?? Timestamp.now(),
+      malId: data['malId'] as int, // Assuming malId is stored as an int field
+      title: data['title'] as String,
+      status: data['status'] as String? ?? '',
+      imageUrl: data['imageUrl'] as String? ?? '',
+      completedEpisodes:
+          data['completedEpisodes'] as int?, // Changed from 'progress'
+      score: data['score'] as int?,
+      totalEpisodes: data['totalEpisodes'] as int?,
+      genres:
+          (data['genres'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      timestamp: data['timestamp'] as Timestamp? ?? Timestamp.now(),
     );
   }
 }

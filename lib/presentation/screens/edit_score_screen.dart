@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -7,10 +9,12 @@ import 'package:per_rat/presentation/components/constants.dart';
 class EditScoreScreen extends StatefulWidget {
   const EditScoreScreen({
     super.key,
-    required this.anime,
+    this.anime,
+    this.rating,
   });
 
-  final Anime anime;
+  final Anime? anime;
+  final ShowRating? rating;
 
   @override
   State<EditScoreScreen> createState() => _EditScoreScreenState();
@@ -19,6 +23,7 @@ class EditScoreScreen extends StatefulWidget {
 class _EditScoreScreenState extends State<EditScoreScreen> {
   final user = FirebaseAuth.instance.currentUser!;
   late ScrollController _scrollController;
+  late ScrollController _scoreScrollController; // Added for score list
 
   Color? cCompleted;
   Color? cWatching;
@@ -35,85 +40,136 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _scoreScrollController = ScrollController(); // Initialize score controller
+
+    log(widget.rating.toString());
+
+    if (widget.rating != null) {
+      _selectedStatus = widget.rating!.status;
+      _selectedScore = widget.rating!.score?.toString() ?? '';
+      _selectedProgress = widget.rating!.completedEpisodes?.toString() ?? '0';
+
+      // Set button colors based on status
+      if (widget.rating!.status == 'Completed') {
+        cCompleted = Colors.blue;
+      } else if (widget.rating!.status == 'Watching') {
+        cWatching = Colors.green;
+      } else if (widget.rating!.status == 'Plan to Watch') {
+        cPTW = Colors.grey;
+      } else if (widget.rating!.status == 'On Hold') {
+        cOnHold = Colors.yellow;
+      } else if (widget.rating!.status == 'Dropped') {
+        cDropped = Colors.red;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Ensure the widget is still in the tree
+          // Scroll Progress List
+          final progressValue = int.tryParse(_selectedProgress);
+          if (progressValue != null && _scrollController.hasClients) {
+            // Assuming item width = 50, margin = 8 on each side. Total item extent = 66.
+            final progressOffset = progressValue * 66.0;
+            _scrollController.animateTo(
+              progressOffset,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeInOut,
+            );
+          }
+
+          // Scroll Score List
+          final scoreValue = int.tryParse(_selectedScore ?? '');
+          if (scoreValue != null &&
+              scoreValue > 0 &&
+              _scoreScrollController.hasClients) {
+            // Assuming item width = 50, margin = 8 on each side. Total item extent = 66.
+            // Score list is 1-indexed, so (scoreValue - 1) for 0-indexed position.
+            final scoreOffset = (scoreValue - 1) * 66.0;
+            _scoreScrollController.animateTo(
+              scoreOffset,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeInOut,
+            );
+          }
+        }
+      });
+    } else {
+      cWatching = Colors.green; // Default visual for 'Watching'
+    }
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _scoreScrollController.dispose(); // Dispose score controller
     super.dispose();
   }
 
-  // Add this function to sanitize document IDs
-  String sanitizeDocumentId(String id) {
-    // Replace characters that cause problems in Firestore paths
-    // Especially the forward slash which is interpreted as a path separator
-    return id
-        .replaceAll('/', '_')
-        .replaceAll('.', '_')
-        .replaceAll('#', '_')
-        .replaceAll('[', '_')
-        .replaceAll(']', '_')
-        .replaceAll('*', '_')
-        .replaceAll('\\', '_');
-  }
-
   void _submit() async {
+    if (widget.anime == null) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Anime data is missing. Cannot save rating.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     try {
       DocumentReference userDocRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
       CollectionReference ratingCollectionRef =
           userDocRef.collection('ratings');
 
-      // Sanitize the anime title for use as a document ID
-      String docId = sanitizeDocumentId(widget.anime.title);
+      // Ensure widget.anime is not null before accessing its properties
+      String docId = (widget.anime!.malId ?? -widget.anime!.title.hashCode)
+          .toString();
 
-      QuerySnapshot showDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('ratings')
-          .get();
+      // Create a ShowRating object
+      final newRating = ShowRating(
+        // With this approach that creates a unique negative ID based on the title:
+        malId: widget.anime!.malId ?? -widget.anime!.title.hashCode,
+        title: widget.anime!.title,
+        status: _selectedStatus ?? 'Watching',
+        imageUrl: widget.anime!.mainImageUrl,
+        score: _selectedScore != null && _selectedScore!.isNotEmpty
+            ? int.tryParse(_selectedScore!)
+            : null,
+        completedEpisodes:
+            _selectedProgress.isNotEmpty ? int.tryParse(_selectedProgress) : 0,
+        totalEpisodes: widget.anime!.episodes,
+        genres: widget.anime!.genres.map((g) => g.name).toList(),
+        timestamp: Timestamp.now(),
+      );
 
-      // Use the original title in your query check
-      final bool showExists =
-          showDoc.docs.where((show) => show.id.contains(docId)).isNotEmpty;
+      // Convert ShowRating to a Map
+      Map<String, dynamic> ratingData = {
+        'malId': newRating.malId,
+        'title': newRating.title,
+        'status': newRating.status,
+        'imageUrl': newRating.imageUrl,
+        'score': newRating.score,
+        'completedEpisodes': newRating.completedEpisodes,
+        'totalEpisodes': newRating.totalEpisodes,
+        'genres': newRating.genres,
+        'timestamp': newRating.timestamp,
+      };
 
-      // Store both the sanitized ID and the original title
-      if (showExists) {
-        await ratingCollectionRef.doc(docId).set({
-          'title': widget.anime.title, // Store the original title
-          'status': _selectedStatus,
-          'progress': _selectedProgress,
-          'score': _selectedScore,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
+      // Add or update the document in Firestore
+      await ratingCollectionRef
+          .doc(docId)
+          .set(ratingData, SetOptions(merge: true));
 
-        // Rest of your code...
-      }
-      if (!showExists) {
-        await ratingCollectionRef.doc(docId).set({
-          'title': widget.anime.title, // Store the original title
-          'status': _selectedStatus,
-          'progress': _selectedProgress,
-          'score': _selectedScore,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${widget.anime!.title} rating has been updated!'),
+        ),
+      );
 
-        // Rest of your code...
-
-        // Rest of your function...
-
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            //behavior: SnackBarBehavior.floating,
-            content: Text('The movie rating has been added!'),
-          ),
-        );
-
-        Navigator.of(context).pop();
-      }
-
-      // Navigator.of(context).pop();
+      Navigator.of(context).pop();
     } on FirebaseAuthException catch (error) {
       if (error.code.isNotEmpty) {
         //
@@ -137,12 +193,16 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
       if (statusNumber == 1) {
         cCompleted = Colors.blue;
         _selectedStatus = 'Completed';
-        _selectedProgress = widget.anime.episodes.toString();
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: Duration(seconds: 1),
-          curve: Curves.easeInOut,
-        );
+        if (widget.anime != null) {
+          _selectedProgress = widget.anime!.episodes.toString();
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(seconds: 1),
+            curve: Curves.easeInOut,
+          );
+        } else {
+          _selectedProgress = "0"; // Default if anime is null
+        }
       } else if (statusNumber == 2) {
         cWatching = Colors.green;
         _selectedStatus = 'Watching';
@@ -152,9 +212,9 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
         _selectedProgress = '0';
         _scrollController.animateTo(
           0.0,
-          duration: Duration(seconds: 1),
-          curve: Curves.easeInOut,
-        );
+          duration: const Duration(seconds: 1),
+          curve: Curves.easeInOut, // Added missing curve
+        ); // Added missing semicolon and corrected brace placement
       } else if (statusNumber == 4) {
         cOnHold = Colors.yellow;
         _selectedStatus = 'On Hold';
@@ -179,6 +239,22 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.anime == null) {
+      // Handle the case where anime data is not available
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Edit Score'),
+          centerTitle: true,
+        ),
+        body: const Center(
+          child: Text(
+            'Anime data is not available.',
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
     final double buttonWidth = MediaQuery.sizeOf(context).width * 0.29;
     final double buttonHeight = MediaQuery.sizeOf(context).height * 0.05;
 
@@ -197,7 +273,7 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.anime.title,
+                widget.anime!.title, // Now safe due to the check above
                 style: const TextStyle(
                   color: Colors.amber,
                   fontSize: 18,
@@ -220,13 +296,13 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
                       ),
                     ),
                     Text(
-                      widget.anime.status ?? 'unknown',
+                      widget.anime!.status ?? 'unknown', // Now safe
                       style: TextStyle(
-                        color: (widget.anime.status != null &&
-                                widget.anime.status!.contains('Upcoming')
+                        color: (widget.anime!.status != null &&
+                                widget.anime!.status!.contains('Upcoming')
                             ? Colors.blue
-                            : widget.anime.status != null &&
-                                    widget.anime.status!.contains('Ongoing')
+                            : widget.anime!.status != null &&
+                                    widget.anime!.status!.contains('Ongoing')
                                 ? Colors.green
                                 : Colors.purple),
                         fontSize: 16,
@@ -362,9 +438,9 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
                   child: ListView.builder(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
-                      itemCount: widget.anime.episodes != null &&
-                              widget.anime.episodes! > 0
-                          ? widget.anime.episodes! + 1
+                      itemCount: widget.anime!.episodes != null && // Now safe
+                              widget.anime!.episodes! > 0
+                          ? widget.anime!.episodes! + 1
                           : 1,
                       //: widget.anime.episodes! + 2,
                       itemBuilder: (context, index) {
@@ -423,6 +499,8 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
                 child: SizedBox(
                   height: 80,
                   child: ListView.builder(
+                      controller:
+                          _scoreScrollController, // Assign score controller
                       scrollDirection: Axis.horizontal,
                       itemCount: 10, // Adjust the number of items as needed
                       itemBuilder: (context, index) {
@@ -466,11 +544,11 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
     );
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.anime.title),
+        title: Text(widget.anime?.title ?? 'Edit Score'), // Conditional title
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: _submit,
+            onPressed: _submit, // _submit already handles null anime
             icon: const Icon(
               Icons.save_outlined,
               size: 30,
@@ -513,14 +591,15 @@ class _EditScoreScreenState extends State<EditScoreScreen> {
                     )),
                 onPressed: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      duration: const Duration(seconds: 2),
-                      content: Text("${widget.anime.title} has been deleted"),
-                    ),
-                  );
-                },
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        duration: const Duration(seconds: 2),
+                        content: Text(
+                            "${widget.anime?.title ?? 'The item'} has been deleted"),
+                      ),
+                    );
+                  },
                 child: const Padding(
                   padding: EdgeInsets.all(14.0),
                   child: Text(
