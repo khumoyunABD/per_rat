@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'package:per_rat/data/models/anime.dart';
+import 'package:per_rat/data/models/models.dart';
 import 'package:transparent_image/transparent_image.dart';
 
 class DiscoverAnimeItem extends StatelessWidget {
@@ -31,7 +30,7 @@ class DiscoverAnimeItem extends StatelessWidget {
             FadeInImage(
               alignment: Alignment.center,
               placeholder: MemoryImage(kTransparentImage),
-              image: NetworkImage(anime.imageUrl),
+              image: NetworkImage(anime.mainImageUrl),
               fit: BoxFit.cover,
               height: 200,
               width: 150,

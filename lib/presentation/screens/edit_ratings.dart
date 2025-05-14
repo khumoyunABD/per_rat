@@ -1,10 +1,10 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/presentation/components/constants.dart';
-import 'package:per_rat/data/repositories/firestore_data.dart';
-import 'package:per_rat/data/models/anime.dart';
-import 'package:per_rat/data/models/show_rating.dart';
 
 class EditRatingsScreen extends StatefulWidget {
   const EditRatingsScreen({
@@ -20,8 +20,8 @@ class EditRatingsScreen extends StatefulWidget {
 
 class _EditRatingsScreenState extends State<EditRatingsScreen> {
   final user = FirebaseAuth.instance.currentUser!;
-  List<Anime> _registeredAnime = [];
-  Anime? animeSet;
+  // List<Anime> _registeredAnime = [];
+  // Anime? animeSet;
   late ScrollController _scrollController;
 
   //colors for statuses
@@ -36,11 +36,14 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
   String? _selectedProgress = '';
   String? _selectedScore = '';
 
+  // final animeRepo = AnimeRepository();
+
   @override
   void initState() {
     super.initState();
-    _fetchAnime();
+    // _fetchAnime();
     _scrollController = ScrollController();
+    log(widget.showRating.toString());
   }
 
   @override
@@ -48,28 +51,6 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
     _scrollController.dispose();
     super.dispose();
   }
-
-  void _fetchAnime() async {
-    List<Anime> loadedAnime = await loadAnimeFromFirestore();
-    setState(() {
-      _registeredAnime = loadedAnime;
-      animeSet = getAnimeFromShowrating(
-          widget.showRating); // Update animeSet after fetching anime list
-    });
-  }
-
-  Anime? getAnimeFromShowrating(ShowRating showrating) {
-    for (Anime anime in _registeredAnime) {
-      if (anime.title == showrating.showName) {
-        return anime;
-      }
-    }
-    return null;
-  }
-
-  // void setAnime(ShowRating showrating) {
-  //   Anime? animeSet = getAnimeFromShowrating(showrating);
-  // }
 
   void _submit() async {
     try {
@@ -145,7 +126,7 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
       if (statusNumber == 1) {
         cCompleted = Colors.blue;
         _selectedStatus = 'Completed';
-        _selectedProgress = animeSet?.totalEpisodes.toString();
+        _selectedProgress = widget.showRating.progress.toString();
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: Duration(seconds: 1),
@@ -194,6 +175,10 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
     final double buttonWidth = MediaQuery.sizeOf(context).width * 0.29;
     final double buttonHeight = MediaQuery.sizeOf(context).height * 0.05;
 
+    final showProgress = widget.showRating.progress != null
+        ? (int.parse(widget.showRating.progress!))
+        : 0;
+
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -209,7 +194,7 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                animeSet?.title ?? '...',
+                widget.showRating.showName,
                 style: const TextStyle(
                   color: Colors.amber,
                   fontSize: 18,
@@ -377,9 +362,9 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
                   child: ListView.builder(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
-                      itemCount: ((animeSet?.totalEpisodes ?? 0) > 0)
-                          ? (animeSet?.totalEpisodes ?? 0) + 1
-                          : (animeSet?.totalEpisodes ?? 0) + 2,
+                      itemCount: (showProgress > 0)
+                          ? (showProgress) + 1
+                          : (showProgress) + 2,
                       itemBuilder: (context, index) {
                         int number = index;
 
@@ -475,7 +460,7 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
     );
     return Scaffold(
       appBar: AppBar(
-        title: Text(animeSet?.title ?? '...'),
+        title: Text(widget.showRating.showName),
         centerTitle: true,
         actions: [
           IconButton(
@@ -526,7 +511,7 @@ class _EditRatingsScreenState extends State<EditRatingsScreen> {
                     SnackBar(
                       duration: const Duration(seconds: 2),
                       content: Text(
-                          "${animeSet == null ? 'anime' : animeSet!.title} has been deleted"),
+                          "${widget.showRating.showName} has been deleted"),
                     ),
                   );
                 },

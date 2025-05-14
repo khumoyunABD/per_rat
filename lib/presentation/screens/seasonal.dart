@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/repositories/firestore_data.dart';
-import 'package:per_rat/data/models/anime.dart';
+import 'package:per_rat/data/extensions/date_time_extensions.dart';
+import 'package:per_rat/data/models/models.dart';
+import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/screens/dated_anime_screen.dart';
 import 'package:per_rat/presentation/screens/edit_score_screen.dart';
 import 'package:per_rat/presentation/widgets/archive_anime_item.dart';
-import 'package:per_rat/presentation/widgets/seasonal_anime_test.dart';
+import 'package:per_rat/presentation/widgets/seasonal_anime_item.dart';
 
 class SeasonalScreen extends StatefulWidget {
   const SeasonalScreen({
@@ -25,6 +26,8 @@ class _SeasonalScreenState extends State<SeasonalScreen>
   var _isLoading = true;
   String? _error;
 
+  final animeRepo = AnimeRepository();
+
   @override
   void initState() {
     super.initState();
@@ -33,10 +36,28 @@ class _SeasonalScreenState extends State<SeasonalScreen>
   }
 
   void _fetchAnime() async {
-    List<Anime> loadedAnime = await loadAnimeFromFirestore();
-    setState(() {
-      _registeredAnime = loadedAnime;
-    });
+    try {
+      AnimeResponse response = await animeRepo.fetchAnime();
+
+      // Check if the widget is still mounted before calling setState
+      if (mounted) {
+        setState(() {
+          _registeredAnime = response.data;
+          _isLoading = false;
+          // You can also store pagination info if needed
+          // _currentPage = response.pagination.currentPage;
+          // _hasNextPage = response.pagination.hasNextPage;
+        });
+      }
+    } catch (e) {
+      // Check if the widget is still mounted before calling setState
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load anime: $e';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void pickAnime(BuildContext context, Anime anime) {
@@ -72,31 +93,51 @@ class _SeasonalScreenState extends State<SeasonalScreen>
 
   @override
   Widget build(BuildContext context) {
+// Example usage in your screen:
     final List<Anime> lastAnime = _registeredAnime
         .where((anime) =>
-            anime.endDate.isBefore(DateTime.now()) &&
-            anime.endDate.year == DateTime.now().year - 1)
+            anime.aired.to != null &&
+            anime.aired.to.isSafelyBefore(DateTime.now()) &&
+            anime.aired.to?.year == DateTime.now().year - 1)
         .toList();
 
     final List<Anime> thisSeaAnime = _registeredAnime
         .where((anime) =>
-            anime.startDate.isAtSameMomentAs(DateTime.now()) ||
-            anime.startDate.isBefore(DateTime.now()) && anime.endDate.year == 0)
+            (anime.aired.from.isSafelySameMoment(DateTime.now())) ||
+            (anime.aired.from.isSafelyBefore(DateTime.now()) &&
+                (anime.aired.to?.year == null || anime.aired.to?.year == 0)))
         .toList();
 
     final List<Anime> nextAnime = _registeredAnime
-        .where((anime) =>
-            anime.startDate.isAfter(DateTime.now()) &&
-                anime.endDate.year == 0 ||
-            anime.startDate.year == 0)
+        .where((anime) => ((anime.aired.from != null &&
+                anime.aired.from.isSafelyAfter(DateTime.now()) &&
+                (anime.aired.to?.year == null || anime.aired.to?.year == 0)) ||
+            anime.aired.from?.year == 0))
         .toList();
 
     //archive tab
 
-    final numOfYears =
-        _registeredAnime.map((anime) => anime.startDate.year).toSet().toList();
-    numOfYears.sort((a, b) => b.compareTo(a));
-    _registeredAnime.sort((a, b) => b.startDate.compareTo(a.startDate));
+    final numOfYears = _registeredAnime
+        .where((anime) => anime.aired.from != null) // Filter out nulls first
+        .map((anime) => anime.aired.from!.year) // Safe to use ! now
+        .toSet()
+        .toList();
+
+// Sort years in descending order (if any exist)
+    if (numOfYears.isNotEmpty) {
+      numOfYears.sort((a, b) => b.compareTo(a));
+    }
+
+// Sort anime by air date, handling null dates
+    _registeredAnime.sort((a, b) {
+      // Handle case where either date is null
+      if (a.aired.from == null && b.aired.from == null) return 0;
+      if (a.aired.from == null) return 1; // Null dates go last
+      if (b.aired.from == null) return -1;
+
+      // Normal comparison when both are non-null
+      return b.aired.from!.compareTo(a.aired.from!);
+    });
 
     //Last season tab
     Widget lastContent = const Center(
@@ -120,7 +161,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
           mainAxisSpacing: 3,
         ),
         itemCount: lastAnime.length,
-        itemBuilder: (ctx, index) => SeasonalAnimeTest(
+        itemBuilder: (ctx, index) => SeasonalAnimeItem(
           anime: lastAnime[index],
           onSelectAnime: (anime) {
             pickAnime(context, anime);
@@ -162,7 +203,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
           mainAxisSpacing: 5,
         ),
         itemCount: thisSeaAnime.length,
-        itemBuilder: (ctx, index) => SeasonalAnimeTest(
+        itemBuilder: (ctx, index) => SeasonalAnimeItem(
           anime: thisSeaAnime[index],
           onSelectAnime: (anime) {
             pickAnime(context, anime);
@@ -204,7 +245,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
           mainAxisSpacing: 5,
         ),
         itemCount: nextAnime.length,
-        itemBuilder: (ctx, index) => SeasonalAnimeTest(
+        itemBuilder: (ctx, index) => SeasonalAnimeItem(
           anime: nextAnime[index],
           onSelectAnime: (anime) {
             pickAnime(context, anime);
@@ -242,6 +283,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      // Season filtering with null safety
                       ArchiveAnimeItem(
                         onPickSeason: (datedAnime) {
                           pickSeason(datedAnime, 'Winter $year');
@@ -249,9 +291,10 @@ class _SeasonalScreenState extends State<SeasonalScreen>
                         animeSeason: 'Winter',
                         datedAnime: _registeredAnime
                             .where((anime) =>
-                                (anime.startDate.isAfter(DateTime(year, 1, 1))))
-                            .where((anime) =>
-                                anime.startDate.isBefore(DateTime(year, 4, 1)))
+                                anime.aired.from != null && // Add null check
+                                anime.aired.from!.year == year &&
+                                anime.aired.from!.month >= 1 &&
+                                anime.aired.from!.month < 4)
                             .toList(),
                       ),
                       ArchiveAnimeItem(
@@ -261,11 +304,13 @@ class _SeasonalScreenState extends State<SeasonalScreen>
                         animeSeason: 'Spring',
                         datedAnime: _registeredAnime
                             .where((anime) =>
-                                (anime.startDate.isAfter(DateTime(year, 4, 1))))
-                            .where((anime) =>
-                                anime.startDate.isBefore(DateTime(year, 7, 1)))
+                                anime.aired.from != null && // Add null check
+                                anime.aired.from!.year == year &&
+                                anime.aired.from!.month >= 4 &&
+                                anime.aired.from!.month < 7)
                             .toList(),
                       ),
+
                       ArchiveAnimeItem(
                         onPickSeason: (datedAnime) {
                           pickSeason(datedAnime, 'Summer $year');
@@ -273,23 +318,53 @@ class _SeasonalScreenState extends State<SeasonalScreen>
                         animeSeason: 'Summer',
                         datedAnime: _registeredAnime
                             .where((anime) =>
-                                (anime.startDate.isAfter(DateTime(year, 7, 1))))
-                            .where((anime) =>
-                                anime.startDate.isBefore(DateTime(year, 10, 1)))
+                                anime.aired.from != null && // Add null check
+                                anime.aired.from!.year == year &&
+                                anime.aired.from!.month >= 7 &&
+                                anime.aired.from!.month < 10)
                             .toList(),
                       ),
+
                       ArchiveAnimeItem(
                         onPickSeason: (datedAnime) {
                           pickSeason(datedAnime, 'Fall $year');
                         },
                         animeSeason: 'Fall',
                         datedAnime: _registeredAnime
-                            .where((anime) => (anime.startDate
-                                .isAfter(DateTime(year, 10, 1))))
-                            .where((anime) => anime.startDate
-                                .isBefore(DateTime(year, 12, 31)))
+                            .where((anime) =>
+                                anime.aired.from != null && // Add null check
+                                anime.aired.from!.year == year &&
+                                anime.aired.from!.month >= 10 &&
+                                anime.aired.from!.month <=
+                                    12) // Fixed: month < 12 to month <= 12
                             .toList(),
                       ),
+
+                      //old
+                      // ArchiveAnimeItem(
+                      //   onPickSeason: (datedAnime) {
+                      //     pickSeason(datedAnime, 'Summer $year');
+                      //   },
+                      //   animeSeason: 'Summer',
+                      //   datedAnime: _registeredAnime
+                      //       .where((anime) => (anime.aired.from!
+                      //           .isAfter(DateTime(year, 7, 1))))
+                      //       .where((anime) => anime.aired.from!
+                      //           .isBefore(DateTime(year, 10, 1)))
+                      //       .toList(),
+                      // ),
+                      // ArchiveAnimeItem(
+                      //   onPickSeason: (datedAnime) {
+                      //     pickSeason(datedAnime, 'Fall $year');
+                      //   },
+                      //   animeSeason: 'Fall',
+                      //   datedAnime: _registeredAnime
+                      //       .where((anime) => (anime.aired.from!
+                      //           .isAfter(DateTime(year, 10, 1))))
+                      //       .where((anime) => anime.aired.from!
+                      //           .isBefore(DateTime(year, 12, 31)))
+                      //       .toList(),
+                      // ),
                     ],
                   ),
                 ],

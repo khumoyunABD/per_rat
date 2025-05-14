@@ -3,9 +3,8 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/repositories/firestore_data.dart';
-import 'package:per_rat/data/models/anime.dart';
-import 'package:per_rat/data/models/show_rating.dart';
+import 'package:per_rat/data/models/models.dart';
+import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/screens/edit_ratings.dart';
 import 'package:per_rat/presentation/screens/show_rating_details_screen.dart';
 import 'package:per_rat/presentation/widgets/all_anime_item.dart';
@@ -32,29 +31,30 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
   //getting Anime
   Anime? animeSet;
 
+  final animeRepo = AnimeRepository();
+
   void _fetchAnime() async {
     try {
-      List<Anime> loadedAnime = await loadAnimeFromFirestore();
-      setState(() {
-        _registeredAnime = loadedAnime;
-        // _isLoading = false;
-      });
-      _checkLoadingState();
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load anime: $e';
-        _isLoading = false;
-      });
-    }
-  }
+      AnimeResponse response = await animeRepo.fetchAnime();
 
-  Anime? getAnimeFromShowrating(ShowRating showrating) {
-    for (Anime anime in _registeredAnime) {
-      if (anime.title == showrating.showName) {
-        return anime;
+      if (mounted) {
+        setState(() {
+          _registeredAnime = response.data;
+          // You can also store pagination info if needed
+          // _currentPage = response.pagination.currentPage;
+          // _hasNextPage = response.pagination.hasNextPage;
+        });
+
+        _checkLoadingState();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load anime: $e';
+          _isLoading = false;
+        });
       }
     }
-    return null;
   }
 
   Future<void> displayRating() async {
@@ -70,27 +70,41 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
           .map((doc) => ShowRating.fromFirestore(doc))
           .toList();
 
-      setState(() {
-        _showratings = filteredRatings;
-      });
-      _checkLoadingState();
+      if (mounted) {
+        setState(() {
+          _showratings = filteredRatings;
+        });
+        _checkLoadingState();
+      }
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load ratings: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+// Check if both anime and ratings have been loaded
+  void _checkLoadingState() {
+    if (mounted &&
+        (_registeredAnime.isNotEmpty ||
+            _showratings.isNotEmpty ||
+            _error != null)) {
       setState(() {
-        _error = 'Failed to load ratings: $e';
         _isLoading = false;
       });
     }
   }
 
-  // Check if both anime and ratings have been loaded
-  void _checkLoadingState() {
-    if (_registeredAnime.isNotEmpty ||
-        _showratings.isNotEmpty ||
-        _error != null) {
-      setState(() {
-        _isLoading = false;
-      });
+  Anime? getAnimeFromShowrating(ShowRating showrating) {
+    for (Anime anime in _registeredAnime) {
+      if (anime.title == showrating.showName) {
+        return anime;
+      }
     }
+    return null;
   }
 
   @override

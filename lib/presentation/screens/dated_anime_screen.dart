@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/models/anime.dart';
+import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/widgets/dated_anime_item.dart';
 

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/models/anime.dart';
+import 'package:per_rat/data/extensions/theme_extension.dart';
+import 'package:per_rat/data/models/models.dart';
 import 'package:transparent_image/transparent_image.dart';
 
-class SeasonalAnimeTest extends StatelessWidget {
-  const SeasonalAnimeTest({
+class SeasonalAnimeItem extends StatelessWidget {
+  const SeasonalAnimeItem({
     super.key,
     required this.anime,
     required this.onSelectAnime,
@@ -31,7 +32,7 @@ class SeasonalAnimeTest extends StatelessWidget {
           children: [
             FadeInImage(
               placeholder: MemoryImage(kTransparentImage),
-              image: NetworkImage(anime.imageUrl),
+              image: NetworkImage(anime.mainImageUrl),
               fit: BoxFit.cover,
               height: 400,
               width: double.infinity,
@@ -88,7 +89,7 @@ class SeasonalAnimeTest extends StatelessWidget {
                       horizontal: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
+                      color: context.colors.surface,
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(8),
                         bottomRight: Radius.circular(8),
@@ -114,7 +115,7 @@ class SeasonalAnimeTest extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          anime.genre.join(', '),
+                          anime.genreNames.join(', '),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,

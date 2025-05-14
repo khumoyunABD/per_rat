@@ -3,14 +3,13 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/repositories/firestore_data.dart';
+import 'package:per_rat/data/models/models.dart';
+import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/data/repositories/firestore_service.dart';
 import 'package:per_rat/data/repositories/messaging_service.dart';
-import 'package:per_rat/data/models/anime.dart';
-import 'package:per_rat/data/models/show_rating.dart';
 import 'package:per_rat/presentation/screens/show_rating_details_screen.dart';
 import 'package:per_rat/presentation/widgets/home_anime_skeleton.dart';
-import 'package:per_rat/presentation/widgets/new_home_anime_item.dart';
+import 'package:per_rat/presentation/widgets/home_grid_anime_item.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -42,29 +41,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isSelectionMode = false;
   List<ShowRating> _selectedRatings = [];
 
+  final animeRepo = AnimeRepository();
+
   void _fetchAnime() async {
     try {
-      List<Anime> loadedAnime = await loadAnimeFromFirestore();
-      setState(() {
-        _registeredAnime = loadedAnime;
-        //_isLoading = false;
-      });
-      _checkLoadingState();
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load anime: $e';
-        _isLoading = false;
-      });
-    }
-  }
+      AnimeResponse response = await animeRepo.fetchAnime();
 
-  Anime? getAnimeFromShowrating(ShowRating showrating) {
-    for (Anime anime in _registeredAnime) {
-      if (anime.title == showrating.showName) {
-        return anime;
+      if (mounted) {
+        setState(() {
+          _registeredAnime = response.data;
+          // You can also store pagination info if needed
+          // _currentPage = response.pagination.currentPage;
+          // _hasNextPage = response.pagination.hasNextPage;
+        });
+
+        _checkLoadingState();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load anime: $e';
+          _isLoading = false;
+        });
       }
     }
-    return null;
   }
 
   Future<void> displayRating() async {
@@ -80,14 +80,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .map((doc) => ShowRating.fromFirestore(doc))
           .toList();
 
-      setState(() {
-        _showratings = filteredRatings;
-      });
+      if (mounted) {
+        setState(() {
+          _showratings = filteredRatings;
+        });
+        _checkLoadingState();
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load ratings: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load ratings: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -100,23 +105,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .doc(showRating.showName) // Assuming showName is the document ID
           .delete();
 
-      setState(() {
-        _showratings.remove(showRating);
-      });
+      if (mounted) {
+        setState(() {
+          _showratings.remove(showRating);
+        });
 
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Selected ratings have been deleted'),
-        ),
-      );
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Selected ratings have been deleted'),
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error deleting ${showRating.showName}: $e'),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting ${showRating.showName}: $e'),
+          ),
+        );
+      }
     }
+  }
+
+  Anime? getAnimeFromShowrating(ShowRating showrating) {
+    for (Anime anime in _registeredAnime) {
+      if (anime.title == showrating.showName) {
+        return anime;
+      }
+    }
+    return null;
   }
 
   void _toggleSelectionMode() {
@@ -138,11 +156,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-  // Check if both anime and ratings have been loaded
+// Check if both anime and ratings have been loaded
   void _checkLoadingState() {
-    if (_registeredAnime.isNotEmpty ||
-        _showratings.isNotEmpty ||
-        _error != null) {
+    if (mounted &&
+        (_registeredAnime.isNotEmpty ||
+            _showratings.isNotEmpty ||
+            _error != null)) {
       setState(() {
         _isLoading = false;
       });
@@ -164,9 +183,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       await _firestoreService.uploadUserMetadata();
     } catch (e) {
-      setState(() {
-        _error = 'Failed to upload user metadata: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to upload user metadata: $e';
+        });
+      }
     }
   }
 
@@ -240,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         selectRating(context, rating);
                       }
                     },
-                    child: NewHomeAnimeItem(
+                    child: HomeAnimeGridItem(
                       showRating: rating,
                       anime: animeSet!,
                       isSelected: _selectedRatings.contains(rating),
@@ -249,17 +270,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       },
                     ),
                   );
-
-                  // return HomeAnimeItem(
-                  //   showRating: rating,
-                  //   anime: animeSet!,
-                  //   onSelectRating: (rating) {
-                  //     selectRating(context, rating);
-                  //   },
-                  //   onDeleteRating: (rating) {
-                  //     deleteRating(rating);
-                  //   },
-                  // );
                 },
               );
 

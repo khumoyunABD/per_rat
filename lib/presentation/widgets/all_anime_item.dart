@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:per_rat/data/models/anime.dart';
-import 'package:per_rat/data/models/show_rating.dart';
+import 'package:per_rat/data/models/models.dart';
 
 class AllAnimeItem extends StatelessWidget {
   const AllAnimeItem({
@@ -38,7 +37,7 @@ class AllAnimeItem extends StatelessWidget {
                 height: 140,
                 decoration: BoxDecoration(
                   image: DecorationImage(
-                    image: NetworkImage(anime.imageUrl),
+                    image: NetworkImage(anime.mainImageUrl),
                     // assuming imageUrl is a part of showRating
                     fit: BoxFit.cover,
                   ),
@@ -74,7 +73,7 @@ class AllAnimeItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Progress: ${showRating.progress} / ${anime.totalEpisodes}',
+                        'Progress: ${showRating.progress} / ${anime.episodes}',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Color.fromARGB(248, 214, 99, 33),
