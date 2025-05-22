@@ -3,6 +3,8 @@
 
 export 'anime_model.dart';
 export 'anime_recommendation_response.dart';
+export 'anime_search_result.dart';
+export 'seasonal_anime_response.dart';
 export 'show_rating.dart';
 export 'single_anime_response.dart';
 export 'top_anime_response.dart';

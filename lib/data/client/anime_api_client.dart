@@ -38,6 +38,20 @@ abstract class AnimeApiClient {
     @Query("limit") int limit = 25,
     @Query("filter") String? filter, // airing, upcoming, bypopularity, favorite
   });
+
+  @GET("/seasons/now")
+  Future<SeasonalAnimeResponse> getThisSeasonAnime({
+    @Query("page") int page = 1,
+    @Query("limit") int limit = 25,
+  });
+
+  @GET("/seasons/{year}/{season}")
+  Future<SeasonalAnimeResponse> getSeasonalAnime({
+    @Path("year") required int year,
+    @Path("season") required String season,
+    @Query("page") int page = 1,
+    @Query("limit") int limit = 25,
+  });
 }
 
 abstract class ParseErrorLogger {

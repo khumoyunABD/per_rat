@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:per_rat/data/client/jikan_service.dart'; // Updated import
+import 'package:per_rat/data/extensions/anime_season.dart';
 import 'package:per_rat/data/models/models.dart';
 
 class AnimeRepository {
@@ -133,30 +134,8 @@ class AnimeRepository {
 
       if (e is DioException) {
         throw Exception('API Error: ${e.message}');
-      }throw Exception('Failed to fetch anime by ID: $e');
-    }
-  }
-
-  /// Direct implementation for fetching anime by ID without Retrofit
-  Future<Anime> fetchAnimeByIdDirect(int id) async {
-    try {
-      final response =
-          await _jikanService.dio.get<Map<String, dynamic>>('/anime/$id');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final animeResponse = AnimeResponse.fromJson(response.data!);
-        if (animeResponse.data.isNotEmpty) {
-          return animeResponse.data.first;
-        }
-        throw Exception('Anime with ID $id not found');
       }
-      throw Exception('Unexpected status code: ${response.statusCode}');
-    } on DioException catch (e) {
-      logger.e('Dio Exception when fetching anime $id: ${e.message}');
-      throw Exception('API Error: ${e.message}');
-    } catch (e, stackTrace) {
-      logger.e('Unexpected error fetching anime $id');
-      throw Exception('Failed to fetch anime by ID: $e , $stackTrace');
+      throw Exception('Failed to fetch anime by ID: $e');
     }
   }
 
@@ -181,32 +160,6 @@ class AnimeRepository {
         throw Exception('API Error: ${e.message}');
       }
       throw Exception('Failed to search anime: $e');
-    }
-  }
-
-  /// Direct implementation for searching anime without Retrofit
-  Future<AnimeResponse> searchAnimeDirect(String query,
-      {int page = 1, int limit = 25}) async {
-    try {
-      final response = await _jikanService.dio.get<Map<String, dynamic>>(
-        '/anime',
-        queryParameters: {
-          'q': query,
-          'page': page,
-          'limit': limit,
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return AnimeResponse.fromJson(response.data!);
-      }
-      throw Exception('Unexpected status code: ${response.statusCode}');
-    } on DioException catch (e) {
-      logger.e('Dio Exception when searching "$query": ${e.message}');
-      throw Exception('API Error: ${e.message}');
-    } catch (e, stackTrace) {
-      logger.e('Unexpected error searching "$query"');
-      throw Exception('Failed to search anime: $e and stacktrace: $stackTrace');
     }
   }
 
@@ -241,35 +194,117 @@ class AnimeRepository {
     }
   }
 
-  /// Fetches top airing anime
-  // Future<TopAnimeResponse> fetchTopAiringAnime({
-  //   int page = 1,
-  //   int limit = 25,
-  // }) {
-  //   return fetchTopAnime(page: page, limit: limit, filter: 'airing');
-  // }
+  Future<SeasonalAnimeResponse> fetchThisSeasonAnime({
+    int page = 1,
+    int limit = 25,
+  }) async {
+    try {
+      final response = await _jikanService.apiClient.getThisSeasonAnime(
+        page: page,
+        limit: limit,
+      );
 
-  /// Fetches top upcoming anime
-  // Future<TopAnimeResponse> fetchTopUpcomingAnime({
-  //   int page = 1,
-  //   int limit = 25,
-  // }) {
-  //   return fetchTopAnime(page: page, limit: limit, filter: 'upcoming');
-  // }
+      logger.d('This Season Anime response: $response ');
 
-  /// Fetches top anime by popularity
-  // Future<TopAnimeResponse> fetchTopByPopularityAnime({
-  //   int page = 1,
-  //   int limit = 25,
-  // }) {
-  //   return fetchTopAnime(page: page, limit: limit, filter: 'bypopularity');
-  // }
+      return response;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error fetching top anime list with $e',
+        name: 'Repository Error',
+        error: e,
+        stackTrace: stackTrace,
+      );
 
-  /// Fetches top favorite anime
-  // Future<TopAnimeResponse> fetchTopFavoriteAnime({
-  //   int page = 1,
-  //   int limit = 25,
-  // }) {
-  //   return fetchTopAnime(page: page, limit: limit, filter: 'favorite');
-  // }
+      if (e is DioException) {
+        throw Exception('API Error: ${e.message}');
+      }
+      throw Exception('Failed to fetch this season anime: $e');
+    }
+  }
+
+  /// Get current season and year
+  ({int year, AnimeSeason season}) getCurrentSeason() {
+    final now = DateTime.now();
+    return (year: now.year, season: now.animeSeason);
+  }
+
+  /// Get previous season and its year
+  ({int year, AnimeSeason season}) getPreviousSeason() {
+    final now = DateTime.now();
+    final currentSeason = now.animeSeason;
+
+    // If current season is winter, previous season is fall of previous year
+    if (currentSeason == AnimeSeason.winter) {
+      return (year: now.year - 1, season: AnimeSeason.fall);
+    } else {
+      return (year: now.year, season: currentSeason.previous);
+    }
+  }
+
+  /// Fetch anime from previous season
+  Future<SeasonalAnimeResponse> fetchPreviousSeasonAnime({
+    int page = 1,
+    int limit = 25,
+  }) async {
+    try {
+      final prevSeason = getPreviousSeason();
+
+      final response = await _jikanService.apiClient.getSeasonalAnime(
+        year: prevSeason.year,
+        season: prevSeason.season.value,
+        page: page,
+        limit: limit,
+      );
+
+      logger.d(
+          'Previous Season (${prevSeason.season.value} ${prevSeason.year}) Anime response: $response');
+
+      return response;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error fetching previous season anime',
+        name: 'Repository Error',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      if (e is DioException) {
+        throw Exception('API Error: ${e.message}');
+      }
+      throw Exception('Failed to fetch previous season anime: $e');
+    }
+  }
+
+  /// Fetch anime from any specific season
+  Future<SeasonalAnimeResponse> fetchSeasonalAnime({
+    required int year,
+    required AnimeSeason season,
+    int page = 1,
+    int limit = 25,
+  }) async {
+    try {
+      final response = await _jikanService.apiClient.getSeasonalAnime(
+        year: year,
+        season: season.value,
+        page: page,
+        limit: limit,
+      );
+
+      logger.d('Seasonal Anime (${season.value} $year) response: $response');
+
+      return response;
+    } catch (e, stackTrace) {
+      developer.log(
+        'Error fetching seasonal anime for ${season.value} $year',
+        name: 'Repository Error',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      if (e is DioException) {
+        throw Exception('API Error: ${e.message}');
+      }
+      throw Exception('Failed to fetch seasonal anime: $e');
+    }
+  }
 }

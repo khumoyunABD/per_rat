@@ -39,6 +39,8 @@ abstract class $SingleAnimeResponseCopyWith<$Res> {
       _$SingleAnimeResponseCopyWithImpl<$Res, SingleAnimeResponse>;
   @useResult
   $Res call({Anime data});
+
+  $AnimeCopyWith<$Res> get data;
 }
 
 /// @nodoc
@@ -65,6 +67,16 @@ class _$SingleAnimeResponseCopyWithImpl<$Res, $Val extends SingleAnimeResponse>
               as Anime,
     ) as $Val);
   }
+
+  /// Create a copy of SingleAnimeResponse
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $AnimeCopyWith<$Res> get data {
+    return $AnimeCopyWith<$Res>(_value.data, (value) {
+      return _then(_value.copyWith(data: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -76,6 +88,9 @@ abstract class _$$SingleAnimeResponseImplCopyWith<$Res>
   @override
   @useResult
   $Res call({Anime data});
+
+  @override
+  $AnimeCopyWith<$Res> get data;
 }
 
 /// @nodoc

@@ -14,7 +14,6 @@ class MyListScreen extends StatefulWidget {
 class _MyListScreenState extends State<MyListScreen>
     with TickerProviderStateMixin {
   late final TabController _tabController;
-  //List<Anime> _registeredAnime = [];
 
   @override
   void initState() {

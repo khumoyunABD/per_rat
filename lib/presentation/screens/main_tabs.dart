@@ -8,7 +8,7 @@ import 'package:per_rat/presentation/drawer_screens/notifications_screen.dart';
 import 'package:per_rat/presentation/screens/discover.dart';
 import 'package:per_rat/presentation/screens/home.dart';
 import 'package:per_rat/presentation/screens/my_list.dart';
-import 'package:per_rat/presentation/screens/seasonal.dart';
+import 'package:per_rat/presentation/screens/seasonal/seasonal.dart';
 import 'package:per_rat/presentation/user_profile_screens/profile.dart';
 
 class MainTabsScreen extends StatefulWidget {

@@ -123,7 +123,7 @@ class HomeAnimeGridItem extends StatelessWidget {
                           Icon(Icons.star, color: Colors.white, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            showRating.score.toString(),
+                            showRating.score?.toString() ?? 'N/A',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
@@ -151,7 +151,8 @@ class HomeAnimeGridItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    showRating.genres?.join(', ') ?? 'N/A', // Use genres from showRating
+                    showRating.genres?.join(', ') ??
+                        'N/A', // Use genres from showRating
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
