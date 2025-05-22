@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:per_rat/data/client/jikan_service.dart';
 import 'package:per_rat/data/repositories/anime_repository.dart';
+import 'package:per_rat/presentation/bloc/seasonal_anime_bloc/seasonal_anime_bloc.dart';
+import 'package:per_rat/presentation/bloc/this_season_anime_bloc/this_season_anime_bloc.dart';
 import 'package:per_rat/presentation/bloc/top_anime_bloc/top_anime_bloc.dart';
 import 'package:per_rat/utils/utils.dart';
 
@@ -25,6 +27,16 @@ class App extends StatelessWidget {
         providers: [
           BlocProvider(
             create: (context) => TopAnimeBloc(
+              animeRepository: RepositoryProvider.of<AnimeRepository>(context),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => ThisSeasonAnimeBloc(
+              animeRepository: RepositoryProvider.of<AnimeRepository>(context),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => SeasonalAnimeBloc(
               animeRepository: RepositoryProvider.of<AnimeRepository>(context),
             ),
           ),

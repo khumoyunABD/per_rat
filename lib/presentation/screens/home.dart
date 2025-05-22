@@ -126,15 +126,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-// Check if ratings have been loaded
-  // void _checkLoadingState() {
-  //   if (mounted && (_showratings.isNotEmpty || _error != null)) {
-  //     setState(() {
-  //       _isLoading = false;
-  //     });
-  //   }
-  // }
-
   @override
   void initState() {
     super.initState();

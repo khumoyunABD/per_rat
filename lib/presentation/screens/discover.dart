@@ -36,13 +36,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   void pickAnime(BuildContext context, Anime anime) {
-    // Changed Anime to Anime
-    // Assuming AnimeDetailsScreen can handle Anime or there's a mapping
-    // For now, we'll cast, but this might need a proper adapter if Anime != Anime
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (ctx) => AnimeDetailsScreen(
-          anime: anime, // This cast might fail if types are incompatible
+          anime: anime,
         ),
       ),
     );
@@ -280,6 +277,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ),
               ),
               BlocBuilder<TopAnimeBloc, TopAnimeState>(
+                buildWhen: (previous, current) {
+                  // Add this buildWhen condition to match the pattern used for other sections
+                  if (current is TopAnimeLoading &&
+                      current.filter == 'upcoming') return true;
+                  if (current is TopAnimeLoaded && current.filter == 'upcoming')
+                    return true;
+                  if (current is TopAnimeError && current.filter == 'upcoming')
+                    return true;
+                  if (previous is TopAnimeInitial && current is TopAnimeLoading)
+                    return true;
+                  return false;
+                },
                 builder: (context, state) {
                   if (state is TopAnimeLoading && state.filter == 'upcoming') {
                     return const Center(child: CircularProgressIndicator());

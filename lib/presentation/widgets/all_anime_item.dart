@@ -59,7 +59,7 @@ class AllAnimeItem extends StatelessWidget {
                           Icon(Icons.star, color: Colors.amber, size: 20),
                           const SizedBox(width: 4),
                           Text(
-                            showRating.score.toString(),
+                            showRating.score?.toString() ?? 'N/A',
                             style: const TextStyle(
                               fontSize: 16,
                               color: Colors.white,
@@ -69,7 +69,7 @@ class AllAnimeItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Progress: ${showRating.completedEpisodes} / ${showRating.totalEpisodes}',
+                        'Progress: ${showRating.completedEpisodes ?? 0} / ${showRating.totalEpisodes ?? '?'}',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Color.fromARGB(248, 214, 99, 33),

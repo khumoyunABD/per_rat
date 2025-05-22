@@ -30,7 +30,8 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
   final user = FirebaseAuth.instance.currentUser!;
   List<ShowRating> _showratings = [];
 
-  final animeRepo = AnimeRepository(JikanService()); // Pass JikanService instance
+  final animeRepo =
+      AnimeRepository(JikanService()); // Pass JikanService instance
 
   Future<void> displayRating() async {
     try {
@@ -65,13 +66,6 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
   void initState() {
     super.initState();
     displayRating();
-
-    // Set a timer to stop showing the skeleton after a limited time
-    // Timer(Duration(seconds: 3), () {
-    // setState(() {
-    //   _isLoading = false;
-    // });
-    // });
   }
 
   @override
@@ -89,7 +83,8 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
     // Modified editRating to accept Anime and ShowRating
     void editRating(BuildContext context, Anime anime, ShowRating showRating) {
       Navigator.of(context).push(MaterialPageRoute(
-          builder: (ctx) => EditScoreScreen( // Changed to EditScoreScreen
+          builder: (ctx) => EditScoreScreen(
+                // Changed to EditScoreScreen
                 anime: anime, // Pass anime
                 rating: showRating,
               )));
@@ -135,12 +130,14 @@ class _AllAnimeScreenState extends State<AllAnimeScreen> {
                           );
                         }
                       },
-                      onEditRating: (showRating) async { // Make async
+                      onEditRating: (showRating) async {
+                        // Make async
                         try {
                           // Fetches the full details of an anime by its MAL ID
                           Anime fullAnimeDetails =
                               await animeRepo.fetchAnimeById(showRating.malId);
-                          if (!mounted) return; // Check if the widget is still in the tree
+                          if (!mounted)
+                            return; // Check if the widget is still in the tree
                           // Now call editRating with the fetched Anime object and the ShowRating
                           editRating(context, fullAnimeDetails, showRating);
                         } catch (e) {
