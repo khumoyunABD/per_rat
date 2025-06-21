@@ -1,5 +1,3 @@
-// Create a file called theme_extensions.dart
-
 import 'package:flutter/material.dart';
 
 extension ThemeExtension on BuildContext {
@@ -13,5 +11,14 @@ extension ThemeExtension on BuildContext {
   Color get highlight => colors.primary;
   Color get navBarBackground => colors.surface;
   Color get unselectedNavItem => colors.onSurface.withOpacity(0.7);
-  // Add more as needed
+
+  // Enhanced color scheme for better UI
+  Color get logoColor => const Color(0xFF2b233b);
+  Color get gradientStart => const Color(0xFF2b233b);
+  Color get gradientEnd => Colors.deepPurple.shade900;
+  Color get accentGold => Colors.amber.shade300;
+  Color get surfaceOverlay => Colors.white.withOpacity(0.1);
+  Color get textFieldBorder => Colors.white.withOpacity(0.2);
+  Color get textFieldFocusBorder => Colors.amber.shade300;
+  Color get shadowColor => Colors.black.withOpacity(0.1);
 }
