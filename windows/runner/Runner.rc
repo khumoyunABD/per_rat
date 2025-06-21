@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "per_rat" "\0"
+            VALUE "FileDescription", "PERRAT" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "per_rat" "\0"
+            VALUE "InternalName", "PERRAT" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2023 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "per_rat.exe" "\0"
-            VALUE "ProductName", "per_rat" "\0"
+            VALUE "OriginalFilename", "PERRAT.exe" "\0"
+            VALUE "ProductName", "PERRAT" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
