@@ -5,6 +5,7 @@ import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/presentation/bloc/top_anime_bloc/top_anime_bloc.dart'; // This should export events and states
 import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/screens/realtime_search.dart';
+import 'package:per_rat/presentation/widgets/api_error_view.dart';
 import 'package:per_rat/presentation/widgets/discover_anime_item.dart';
 
 class DiscoverScreen extends StatefulWidget {
@@ -143,7 +144,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   if (state is TopAnimeError && state.filter == "airing") {
                     return SizedBox(
                         height: 300,
-                        child: Center(child: Text('Error: ${state.message}')));
+                        child: ApiErrorView(
+                          message: state.message,
+                          compact: true,
+                          onRetry: () => context
+                            .read<TopAnimeBloc>()
+                            .add(const FetchTopAnimeEvent(filter: "airing")),
+                        ));
                   }
                   // Attempt to show previously loaded "airing" data if available and current state is for another filter
                   final currentState = context.watch<TopAnimeBloc>().state;
@@ -232,7 +239,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       state.filter == "bypopularity") {
                     return SizedBox(
                         height: 300,
-                        child: Center(child: Text('Error: ${state.message}')));
+                        child: ApiErrorView(
+                          message: state.message,
+                          compact: true,
+                          onRetry: () => context
+                            .read<TopAnimeBloc>()
+                            .add(const FetchTopAnimeEvent(filter: "bypopularity")),
+                        ));
                   }
                   final currentState = context.watch<TopAnimeBloc>().state;
                   if (currentState is TopAnimeLoaded &&
@@ -314,7 +327,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     );
                   }
                   if (state is TopAnimeError && state.filter == 'upcoming') {
-                    return Center(child: Text('Error: ${state.message}'));
+                    return ApiErrorView(
+                      message: state.message,
+                      compact: true,
+                      onRetry: () => context
+                            .read<TopAnimeBloc>()
+                            .add(const FetchTopAnimeEvent(filter: "upcoming")),
+                    );
                   }
                   if (context.watch<TopAnimeBloc>().state is TopAnimeLoaded &&
                       (context.watch<TopAnimeBloc>().state as TopAnimeLoaded)

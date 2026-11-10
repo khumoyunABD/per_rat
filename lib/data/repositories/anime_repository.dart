@@ -3,7 +3,8 @@ import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
-import 'package:per_rat/data/client/jikan_service.dart'; // Updated import
+import 'package:per_rat/data/client/api_exception.dart';
+import 'package:per_rat/data/client/jikan_service.dart';
 import 'package:per_rat/data/extensions/anime_season.dart';
 import 'package:per_rat/data/models/models.dart';
 
@@ -28,10 +29,7 @@ class AnimeRepository {
         stackTrace: stackTrace,
       );
 
-      if (e is DioException) {
-        throw Exception('API Error: ${e.message}');
-      }
-      throw Exception('Failed to fetch anime: $e');
+      throw ApiException.from(e);
     }
   }
 
@@ -56,10 +54,10 @@ class AnimeRepository {
       throw Exception('Unexpected status code: ${response.statusCode}');
     } on DioException catch (e) {
       logger.e('Dio Exception: ${e.message}');
-      throw Exception('API Error: ${e.message}');
-    } catch (e, stackTrace) {
+      throw ApiException.fromDio(e);
+    } catch (e) {
       logger.e('Unexpected error: $e');
-      throw Exception('Failed to fetch anime: $e and stacktrace: $stackTrace');
+      throw ApiException.from(e);
     }
   }
 
@@ -113,10 +111,7 @@ class AnimeRepository {
         stackTrace: stackTrace,
       );
 
-      if (e is DioException) {
-        throw Exception('API Error: ${e.message}');
-      }
-      throw Exception('Failed to fetch anime by ID: $e');
+      throw ApiException.from(e);
     }
   }
 
@@ -132,10 +127,7 @@ class AnimeRepository {
         stackTrace: stackTrace,
       );
 
-      if (e is DioException) {
-        throw Exception('API Error: ${e.message}');
-      }
-      throw Exception('Failed to fetch anime by ID: $e');
+      throw ApiException.from(e);
     }
   }
 
@@ -156,10 +148,7 @@ class AnimeRepository {
         stackTrace: stackTrace,
       );
 
-      if (e is DioException) {
-        throw Exception('API Error: ${e.message}');
-      }
-      throw Exception('Failed to search anime: $e');
+      throw ApiException.from(e);
     }
   }
 
@@ -187,10 +176,7 @@ class AnimeRepository {
         stackTrace: stackTrace,
       );
 
-      if (e is DioException) {
-        throw Exception('API Error: ${e.message}');
-      }
-      throw Exception('Failed to fetch top anime: $e');
+      throw ApiException.from(e);
     }
   }
 
@@ -215,10 +201,7 @@ class AnimeRepository {
         stackTrace: stackTrace,
       );
 
-      if (e is DioException) {
-        throw Exception('API Error: ${e.message}');
-      }
-      throw Exception('Failed to fetch this season anime: $e');
+      throw ApiException.from(e);
     }
   }
 
@@ -268,10 +251,7 @@ class AnimeRepository {
         stackTrace: stackTrace,
       );
 
-      if (e is DioException) {
-        throw Exception('API Error: ${e.message}');
-      }
-      throw Exception('Failed to fetch previous season anime: $e');
+      throw ApiException.from(e);
     }
   }
 
@@ -301,10 +281,7 @@ class AnimeRepository {
         stackTrace: stackTrace,
       );
 
-      if (e is DioException) {
-        throw Exception('API Error: ${e.message}');
-      }
-      throw Exception('Failed to fetch seasonal anime: $e');
+      throw ApiException.from(e);
     }
   }
 }

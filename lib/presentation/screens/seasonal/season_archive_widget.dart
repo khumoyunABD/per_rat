@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/presentation/bloc/top_anime_bloc/top_anime_bloc.dart';
+import 'package:per_rat/presentation/widgets/api_error_view.dart';
 import 'package:per_rat/presentation/widgets/archive_anime_item.dart';
 
 class SeasonArchiveWidget extends StatelessWidget {
@@ -129,11 +130,13 @@ class SeasonArchiveWidget extends StatelessWidget {
           }
         }
         if (state is TopAnimeError && state.filter == "bypopularity") {
-          return Center(
-            child: Text(
-              'Error: ${state.message}',
-              style: const TextStyle(color: Colors.white),
-            ),
+          return ApiErrorView(
+            message: state.message,
+            onRetry: () {
+              context
+                  .read<TopAnimeBloc>()
+                  .add(const FetchTopAnimeEvent(filter: "bypopularity"));
+            },
           );
         }
         return const Center(

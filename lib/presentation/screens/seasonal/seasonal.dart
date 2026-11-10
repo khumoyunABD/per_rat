@@ -7,6 +7,7 @@ import 'package:per_rat/presentation/bloc/top_anime_bloc/top_anime_bloc.dart';
 import 'package:per_rat/presentation/screens/anime_details.dart';
 import 'package:per_rat/presentation/screens/dated_anime_screen.dart';
 import 'package:per_rat/presentation/screens/edit_score_screen.dart';
+import 'package:per_rat/presentation/widgets/api_error_view.dart';
 import 'package:per_rat/presentation/widgets/seasonal_anime_item.dart';
 
 class SeasonalScreen extends StatefulWidget {
@@ -176,26 +177,13 @@ class _SeasonalScreenState extends State<SeasonalScreen>
           error: (message, previousList, previousPagination, previousPage,
               previousSeasonInfo) {
             if (previousList == null || previousList.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline,
-                        size: 60, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text('Error: $message',
-                        style: const TextStyle(color: Colors.white)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context
-                            .read<SeasonalAnimeBloc>()
-                            .add(const SeasonalAnimeEvent.refresh());
-                      },
-                      child: const Text('Try Again'),
-                    ),
-                  ],
-                ),
+              return ApiErrorView(
+                message: message,
+                onRetry: () {
+                  context
+                      .read<SeasonalAnimeBloc>()
+                      .add(const SeasonalAnimeEvent.refresh());
+                },
               );
             }
 
@@ -203,7 +191,7 @@ class _SeasonalScreenState extends State<SeasonalScreen>
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Error: $message'),
+                  content: Text(message),
                   action: SnackBarAction(
                     label: 'Retry',
                     onPressed: () {
@@ -277,11 +265,13 @@ class _SeasonalScreenState extends State<SeasonalScreen>
           );
         }
         if (state is ThisSeasonAnimeError) {
-          return Center(
-            child: Text(
-              'Error: ${state.message}',
-              style: const TextStyle(color: Colors.white),
-            ),
+          return ApiErrorView(
+            message: state.message,
+            onRetry: () {
+              context
+                  .read<ThisSeasonAnimeBloc>()
+                  .add(const FetchThisSeasonAnimeEvent());
+            },
           );
         }
         return const Center(
@@ -333,11 +323,13 @@ class _SeasonalScreenState extends State<SeasonalScreen>
           );
         }
         if (state is TopAnimeError && state.filter == "upcoming") {
-          return Center(
-            child: Text(
-              'Error: ${state.message}',
-              style: const TextStyle(color: Colors.white),
-            ),
+          return ApiErrorView(
+            message: state.message,
+            onRetry: () {
+              context
+                  .read<TopAnimeBloc>()
+                  .add(const FetchTopAnimeEvent(filter: "upcoming"));
+            },
           );
         }
         return const Center(

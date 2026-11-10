@@ -2,10 +2,12 @@ import 'dart:async'; // For debounce timer
 
 import 'package:flutter/material.dart';
 import 'package:jikan_api/jikan_api.dart' as jikan; // Import jikan_api
+import 'package:per_rat/data/client/api_exception.dart';
 import 'package:per_rat/data/client/jikan_service.dart';
 import 'package:per_rat/data/models/models.dart';
 import 'package:per_rat/data/repositories/anime_repository.dart';
 import 'package:per_rat/presentation/screens/anime_details.dart';
+import 'package:per_rat/presentation/widgets/api_error_view.dart';
 
 class RealtimeSearchScreen extends StatefulWidget {
   const RealtimeSearchScreen({super.key});
@@ -62,7 +64,7 @@ class _RealtimeSearchScreenState extends State<RealtimeSearchScreen> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error searching for anime: $e';
+        _errorMessage = ApiException.from(e).message;
         _isLoading = false;
       });
       print('Search error: $e');
@@ -105,8 +107,7 @@ class _RealtimeSearchScreenState extends State<RealtimeSearchScreen> {
 
       // Show error
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Failed to load anime details. Please try again.')),
+        SnackBar(content: Text(ApiException.from(e).message)),
       );
       print('Error fetching anime details: $e');
     }
@@ -203,13 +204,9 @@ class _RealtimeSearchScreenState extends State<RealtimeSearchScreen> {
     }
 
     if (_errorMessage.isNotEmpty) {
-      return Center(
-        child: Text(
-          _errorMessage,
-          style: TextStyle(
-            color: Colors.red,
-          ),
-        ),
+      return ApiErrorView(
+        message: _errorMessage,
+        onRetry: () => _searchAnime(searchName),
       );
     }
 
